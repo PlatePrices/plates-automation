@@ -1,15 +1,8 @@
 import axios from "axios";
+import { Plate } from "../types/plates.js";
+import SELECTORS from "../config/selectors.js";
 
-type Plate = {
-  link: string;
-  img: string;
-  price: string;
-  emirate: string;
-  character?: string;
-  number: number;
-};
-
-const fetchPlateData = async () => {
+export const dubizzelRunner = async (): Promise<Plate[]> => {
   let pageNumber = 0;
   const results: Plate[] = [];
 
@@ -28,20 +21,7 @@ const fetchPlateData = async () => {
       method: "post",
       maxBodyLength: Infinity,
       url: "https://wd0ptz13zs-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(4.11.0);%20Browser%20(lite)&x-algolia-api-key=cef139620248f1bc328a00fddc7107a6&x-algolia-application-id=WD0PTZ13ZS",
-      headers: {
-        Accept: "*/*",
-        "Accept-Language": "en-US,en;q=0.9",
-        Connection: "keep-alive",
-        DNT: "1",
-        Origin: "https://dubai.dubizzle.com",
-        Referer: "https://dubai.dubizzle.com/",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "cross-site",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
-        "Content-Type": "application/json",
-      },
+      headers: SELECTORS.DUBIZZEL.CONFIG.HEADERS,
       data: data,
     };
 
@@ -51,7 +31,7 @@ const fetchPlateData = async () => {
       const carPlates = response.data["results"][0]["hits"];
 
       if (carPlates.length === 0) {
-        break; 
+        break;
       }
 
       for (const plate of carPlates) {
@@ -85,6 +65,5 @@ const fetchPlateData = async () => {
       break;
     }
   }
+  return results;
 };
-
-fetchPlateData();

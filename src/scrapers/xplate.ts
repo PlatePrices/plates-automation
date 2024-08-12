@@ -1,17 +1,10 @@
 import { CheerioCrawler } from "crawlee";
-import SELECTORS from "./config/selectors.js";
+import SELECTORS from "../config/selectors.js";
+import { Plate } from "../types/plates.js";
 
 const startUrls = ["https://xplate.com/en/numbers/license-plates?page=2185"];
 
-type Plate = {
-  link: string;
-  img: string;
-  duration: string;
-  price: string;
-  emirate: string;
-  character: string;
-  number: string;
-};
+
 
 const validPlates: Plate[] = [];
 
@@ -19,14 +12,14 @@ const crawler = new CheerioCrawler({
   requestHandler: async ({ $, request, log, enqueueLinks }) => {
     log.info(`Scraping ${request.url}`);
 
-    if ($(SELECTORS.ERROR_MESSAGE_SELECTOR).length) {
+    if ($(SELECTORS.XPLATE.ERROR_MESSAGE_SELECTOR).length) {
       log.info(
         `This is the last page, there is not plates in this page ${request.url}, stop scraping.`
       );
       return;
     }
     // reminder: I excluded the first element since it is not a plate
-    const plates = Array.from($(SELECTORS.ALL_PLATES)).slice(1);
+    const plates = Array.from($(SELECTORS.XPLATE.ALL_PLATES)).slice(1);
 
     plates.forEach((plate) => {
       /**
@@ -38,10 +31,10 @@ const crawler = new CheerioCrawler({
       const plateElement = $(plate);
       const imgSrc = plateElement.find("img").attr("data-src") || "";
       const price =
-        plateElement.find(SELECTORS.PLATE_PRICE).text().trim() || "";
+        plateElement.find(SELECTORS.XPLATE.PLATE_PRICE).text().trim() || "";
       const duration =
-        plateElement.find(SELECTORS.PLATE_DURATION).text().trim() || "";
-      const link = plateElement.find(SELECTORS.PLATE_LINK).attr("href") || "";
+        plateElement.find(SELECTORS.XPLATE.PLATE_DURATION).text().trim() || "";
+      const link = plateElement.find(SELECTORS.XPLATE.PLATE_LINK).attr("href") || "";
 
       const emirateMatch = link.match(/\/(\d+)-(.+?)-code-/);
       const characterMatch = link.match(/code-(\d+)-/);
@@ -81,6 +74,8 @@ const crawler = new CheerioCrawler({
   maxConcurrency: 200,
 });
 
-await crawler.run(startUrls);
+export const xplateRunner = async (): Promise<Plate []> => {
+  await crawler.run(startUrls);
 
-console.log("All Valid Plates:", validPlates.length, validPlates);
+  return validPlates;
+}
