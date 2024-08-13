@@ -5,7 +5,7 @@ import { numbersRunner } from "./scrapers/numberAe.js";
 import { platesAeRunner } from "./scrapers/plates.js";
 import { xplateRunner } from "./scrapers/xplate.js";
 import { Plate } from "./types/plates.js";
-import { plate } from "./Database/schemas/plates.schema.js"; // Adjust the import path as needed
+import { plate } from "./Database/schemas/plates.schema.js";
 import dotenv from "dotenv";
 dotenv.config();
 

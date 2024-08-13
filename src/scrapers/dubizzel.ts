@@ -1,12 +1,23 @@
+import fetch from "node-fetch";
 import { Plate } from "../types/plates.js";
 import SELECTORS from "../config/selectors.js";
 import { validatePlate } from "../validation/zod.js";
+import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
 
 export const dubizzelRunner = async (): Promise<Plate[]> => {
   let pageNumber = 0;
   const results: Plate[] = [];
+  const pagePerformances: {
+    pageNumber: number;
+    durationMs: number;
+    durationSec: number;
+  }[] = [];
+
+  const startTime = Date.now();
 
   while (true) {
+    const pageStartTime = Date.now();
+
     const data = JSON.stringify({
       requests: [
         {
@@ -17,7 +28,7 @@ export const dubizzelRunner = async (): Promise<Plate[]> => {
       ],
     });
 
-    const config: RequestInit = {
+    const config = {
       method: "POST",
       headers: {
         ...SELECTORS.DUBIZZEL.CONFIG.HEADERS,
@@ -26,7 +37,6 @@ export const dubizzelRunner = async (): Promise<Plate[]> => {
       body: data,
     };
 
-    let errorPlate = null;
     try {
       const response = await fetch(
         "https://wd0ptz13zs-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(4.11.0);%20Browser%20(lite)&x-algolia-api-key=cef139620248f1bc328a00fddc7107a6&x-algolia-application-id=WD0PTZ13ZS",
@@ -35,7 +45,7 @@ export const dubizzelRunner = async (): Promise<Plate[]> => {
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-      const responseData = await response.json();
+      const responseData = (await response.json()) as any;
       const carPlates = responseData["results"][0]["hits"];
 
       if (carPlates.length === 0) {
@@ -43,22 +53,17 @@ export const dubizzelRunner = async (): Promise<Plate[]> => {
       }
 
       for (const plate of carPlates) {
-        errorPlate = plate;
         const price = plate["price"];
         const number = plate["details"]["Plate number"]["ar"]["value"];
-
         const link = plate["absolute_url"]["ar"];
         const img = plate["photos"]["main"];
         const emirate = plate["site"]["en"];
-        let character;
-        if (plate["details"]["Plate code"] !== undefined) {
-          character = plate["details"]["Plate code"]["ar"]["value"];
-        } else {
-          character = "";
-        }
+        let character = plate["details"]["Plate code"]
+          ? plate["details"]["Plate code"]["ar"]["value"]
+          : "";
 
-        if(character.length > 3) {
-          character = ""
+        if (character.length > 3) {
+          character = "";
         }
 
         const newPlate: Plate = {
@@ -68,16 +73,31 @@ export const dubizzelRunner = async (): Promise<Plate[]> => {
           character: character,
           img: img,
           emirate: emirate,
-          source: "dubizzle"
+          source: "dubizzle",
         };
-        const isItValidPlate = await validatePlate(newPlate);
+
+        const isItValidPlate = validatePlate(newPlate);
 
         if (isItValidPlate) {
           results.push(newPlate);
         } else {
-          console.log('Plate with the following attributes is not valid: ', newPlate, 'dubizzel')
+          console.log(
+            "Plate with the following attributes is not valid: ",
+            newPlate,
+            "dubizzel"
+          );
         }
       }
+
+      const pageEndTime = Date.now();
+      const pageDurationMs = pageEndTime - pageStartTime;
+      const pageDurationSec = pageDurationMs / 1000;
+
+      pagePerformances.push({
+        pageNumber,
+        durationMs: pageDurationMs,
+        durationSec: pageDurationSec,
+      });
 
       pageNumber++;
     } catch (error) {
@@ -85,5 +105,21 @@ export const dubizzelRunner = async (): Promise<Plate[]> => {
       break;
     }
   }
+
+  const endTime = Date.now();
+  const totalDurationMs = endTime - startTime;
+  const totalDurationSec = totalDurationMs / 1000;
+
+  const performanceRecord = new ScraperPerformance({
+    scraperName: "dubizzel",
+    startTime: new Date(startTime),
+    endTime: new Date(endTime),
+    totalDurationMs,
+    totalDurationSec,
+    pagePerformances,
+  });
+
+  await performanceRecord.save();
+
   return results;
 };

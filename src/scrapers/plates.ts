@@ -1,8 +1,9 @@
-import fetch from "node-fetch"; // Make sure to install node-fetch if you haven't already
+import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 import { Plate } from "../types/plates.js";
 import SELECTORS from "../config/selectors.js";
 import { validatePlate } from "../validation/zod.js";
+import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
 
 const baseUrl = "https://www.plates.ae/plates-en/loadmore_one_plate.php";
 
@@ -13,6 +14,8 @@ const fetchPage = async (page: number): Promise<boolean> => {
   const headers = SELECTORS.PLATES_AE.HEADERS;
 
   try {
+    const pageStartTime = Date.now();
+
     const response = await fetch(baseUrl, {
       method: "POST",
       headers: headers,
@@ -50,7 +53,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
         number,
         character,
         img,
-        source: "plates.ae"
+        source: "plates.ae",
       };
       const isItValidPlate = validatePlate(newPlate);
 
@@ -65,6 +68,14 @@ const fetchPage = async (page: number): Promise<boolean> => {
       }
     });
 
+    const pageEndTime = Date.now();
+    const pageDurationMs = pageEndTime - pageStartTime;
+    const pageDurationSec = pageDurationMs / 1000;
+
+    console.log(
+      `Page ${page} fetched in ${pageDurationMs} ms (${pageDurationSec} s)`
+    );
+
     return true;
   } catch (error) {
     console.error("Error fetching page:", error);
@@ -73,12 +84,53 @@ const fetchPage = async (page: number): Promise<boolean> => {
 };
 
 export const platesAeRunner = async () => {
+  const startTime = Date.now();
+
   let page = 0;
   let hasMorePages = true;
 
+  const pagePerformances: {
+    pageNumber: number;
+    durationMs: number;
+    durationSec: number;
+  }[] = [];
+
   while (hasMorePages) {
+    const batchStartTime = Date.now();
+
     hasMorePages = await fetchPage(page);
+
+    const batchEndTime = Date.now();
+    const batchDurationMs = batchEndTime - batchStartTime;
+    const batchDurationSec = batchDurationMs / 1000;
+
+    pagePerformances.push({
+      pageNumber: page,
+      durationMs: batchDurationMs,
+      durationSec: batchDurationSec,
+    });
+
     page++;
   }
+
+  const endTime = Date.now();
+  const totalDurationMs = endTime - startTime;
+  const totalDurationSec = totalDurationMs / 1000;
+
+  console.log(
+    `Scraping completed. Total duration: ${totalDurationMs} ms (${totalDurationSec} s)`
+  );
+
+  const performanceRecord = new ScraperPerformance({
+    scraperName: "platesAe",
+    startTime: new Date(startTime),
+    endTime: new Date(endTime),
+    totalDurationMs,
+    totalDurationSec,
+    pagePerformances,
+  });
+
+  await performanceRecord.save();
+
   return carPlates;
 };

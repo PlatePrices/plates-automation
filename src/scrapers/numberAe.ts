@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 import { Plate } from "../types/plates.js";
 import SELECTORS from "../config/selectors.js";
 import { validatePlate } from "../validation/zod.js";
+import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
 
 const carPlates: Plate[] = [];
 
@@ -57,10 +58,10 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
             newPlate,
             "numberAe"
           );
-          return undefined; // Explicitly return undefined for invalid plates
+          return undefined;
         }
       })
-      .filter((plate): plate is Plate => plate !== undefined); // Filter out undefined values
+      .filter((plate): plate is Plate => plate !== undefined);
 
     return validPlates;
   } catch (error) {
@@ -70,18 +71,37 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
 };
 
 export const numbersRunner = async () => {
+  const startTime = Date.now();
+
   let pageNumber = 0;
   let stop = false;
   let stoppedPageNumber = 0;
+  const pagePerformances: {
+    pageNumber: number;
+    durationMs: number;
+    durationSec: number;
+  }[] = [];
 
   while (!stop) {
     const batchPlates: Plate[] = [];
+
+    const batchStartTime = Date.now();
 
     for (let i = 0; i < 10; i++) {
       const pagePlates = await fetchPage(pageNumber);
       batchPlates.push(...pagePlates);
       pageNumber++;
     }
+
+    const batchEndTime = Date.now();
+    const batchDurationMs = batchEndTime - batchStartTime;
+    const batchDurationSec = batchDurationMs / 1000;
+
+    pagePerformances.push({
+      pageNumber,
+      durationMs: batchDurationMs,
+      durationSec: batchDurationSec,
+    });
 
     const allExist = batchPlates.every((newPlate) =>
       carPlates.some(
@@ -107,6 +127,23 @@ export const numbersRunner = async () => {
       stoppedPageNumber = pageNumber;
     }
   }
+
+  const endTime = Date.now();
+  const totalDurationMs = endTime - startTime;
+  const totalDurationSec = totalDurationMs / 1000;
+
   console.log(`Stopped at page ${stoppedPageNumber}`);
+
+  const performanceRecord = new ScraperPerformance({
+    scraperName: "numbers",
+    startTime: new Date(startTime),
+    endTime: new Date(endTime),
+    totalDurationMs,
+    totalDurationSec,
+    pagePerformances,
+  });
+
+  await performanceRecord.save();
+
   return carPlates;
 };

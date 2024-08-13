@@ -1,7 +1,9 @@
+import fetch from "node-fetch";
 import getImageFromEmirate from "../utils/imagExtractor.js";
 import { Plate } from "../types/plates.js";
 import SELECTORS from "../config/selectors.js";
 import { validatePlate } from "../validation/zod.js";
+import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
 
 const emirates = {
   SHARJAH: 23,
@@ -12,8 +14,18 @@ const emirates = {
 
 export const emiratesAuctionRunner = async (): Promise<Plate[]> => {
   const results: Plate[] = [];
+  const pagePerformances: {
+    pageNumber: number;
+    durationMs: number;
+    durationSec: number;
+  }[] = [];
+  let pageNumber = 0;
+
+  const startTime = Date.now();
 
   for (const [emirateName, emirateId] of Object.entries(emirates)) {
+    const pageStartTime = Date.now();
+
     const data = JSON.stringify({
       PlateFilterRequest: {
         PlateTypeIds: {
@@ -43,7 +55,7 @@ export const emiratesAuctionRunner = async (): Promise<Plate[]> => {
       IsDesc: false,
     });
 
-    const config: RequestInit = {
+    const config = {
       method: "POST",
       headers: {
         ...SELECTORS.EMIRATES_AUCTION.HEADERS,
@@ -62,7 +74,7 @@ export const emiratesAuctionRunner = async (): Promise<Plate[]> => {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const responseData = await response.json();
+      const responseData = (await response.json()) as any;
       const carPlates = responseData["Data"];
 
       for (const carPlate of carPlates) {
@@ -79,8 +91,9 @@ export const emiratesAuctionRunner = async (): Promise<Plate[]> => {
           character,
           price,
           emirate: emirateName,
-          source: "Emirates auction"
+          source: "Emirates auction",
         };
+
         const isItValidPlate = await validatePlate(newPlate);
 
         if (isItValidPlate) {
@@ -95,8 +108,33 @@ export const emiratesAuctionRunner = async (): Promise<Plate[]> => {
       }
     } catch (error) {
       console.error(`Error fetching plate data for ${emirateName}: ${error}`);
+    } finally {
+      const pageEndTime = Date.now();
+      const pageDurationMs = pageEndTime - pageStartTime;
+      const pageDurationSec = pageDurationMs / 1000;
+
+      pagePerformances.push({
+        pageNumber: pageNumber++,
+        durationMs: pageDurationMs,
+        durationSec: pageDurationSec,
+      });
     }
   }
+
+  const endTime = Date.now();
+  const totalDurationMs = endTime - startTime;
+  const totalDurationSec = totalDurationMs / 1000;
+
+  const performanceRecord = new ScraperPerformance({
+    scraperName: "emiratesAuction",
+    startTime: new Date(startTime),
+    endTime: new Date(endTime),
+    totalDurationMs,
+    totalDurationSec,
+    pagePerformances,
+  });
+
+  await performanceRecord.save();
 
   return results;
 };
