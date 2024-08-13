@@ -4,6 +4,7 @@ import { Plate } from "../types/plates.js";
 import SELECTORS from "../config/selectors.js";
 import { validatePlate } from "../validation/zod.js";
 import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
+import { performanceType } from "../types/performance.js";
 
 const carPlates: Plate[] = [];
 
@@ -16,18 +17,15 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    const plates = Array.from(
-      $('div[class="listings-container"] > div[class="row"] > div')
-    );
+    const plates = Array.from($(SELECTORS.NUMBERS_AE.ALL_PLATES));
 
     const validPlates = plates
       .map((plate) => {
         const plateElement = $(plate);
         const price =
-          plateElement.find('div[class="col-sm-6 col-xs-12"]').text().trim() ||
-          "";
+          plateElement.find(SELECTORS.NUMBERS_AE.PRICE).text().trim() || "";
         const link =
-          plateElement.find('div[class="one-img"] > a').attr("href") || "";
+          plateElement.find(SELECTORS.NUMBERS_AE.LINK).attr("href") || "";
         const img = plateElement.find("img").attr("src") || "";
         const altText = plateElement.find("img").attr("alt") || "";
 
@@ -38,14 +36,14 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
         const emirate = altText.split("Plate")[0].trim();
 
         const newPlate: Plate = {
-          img: "https://www.numbers.ae" + img,
+          img: SELECTORS.NUMBERS_AE.SHARABLE_LINK + img,
           price: price,
-          link: "https://www.numbers.ae" + link,
+          link: SELECTORS.NUMBERS_AE.SHARABLE_LINK + link,
           character,
           number,
           duration,
           emirate,
-          source: "number.ae",
+          source: SELECTORS.NUMBERS_AE.SOURCE_NAME,
         };
 
         const isItValidPlate = validatePlate(newPlate);
@@ -76,12 +74,13 @@ export const numbersRunner = async () => {
   let pageNumber = 0;
   let stop = false;
   let stoppedPageNumber = 0;
-  const pagePerformances: {
-    pageNumber: number;
-    durationMs: number;
-    durationSec: number;
-  }[] = [];
+  const pagePerformances: performanceType[] = [];
 
+  /**
+   * The idea in here is:
+   * there are some pages that has same plates nearly so my idea is just to scan each 10 pages and check if they exist or not
+   * and so on so fourth
+   */
   while (!stop) {
     const batchPlates: Plate[] = [];
 

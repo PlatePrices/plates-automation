@@ -36,8 +36,8 @@ const plateSchema: Schema<Plate> = new Schema({
   },
   source: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
 });
 
 export const plate = mongoose.model<Plate>("plate", plateSchema);

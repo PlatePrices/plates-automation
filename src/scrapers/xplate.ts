@@ -3,14 +3,15 @@ import SELECTORS from "../config/selectors.js";
 import { Plate } from "../types/plates.js";
 import { validatePlate } from "../validation/zod.js";
 import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
+import { performanceType } from "../types/performance.js";
 
 const startUrls = ["https://xplate.com/en/numbers/license-plates?page=0"];
 
 const carPlates: Plate[] = [];
+const pagePerformances: performanceType[] = [];
 
 const crawler = new CheerioCrawler({
   requestHandler: async ({ $, request, log, enqueueLinks }) => {
-    // Start time for the page request
     const pageStartTime = Date.now();
 
     log.info(`Scraping ${request.url}`);
@@ -22,14 +23,10 @@ const crawler = new CheerioCrawler({
       return;
     }
 
-    // Reminder: Exclude the first element since it is not a plate
+    // Reminder: Exclude the first element since it is not a plate as i inspected earlier
     const plates = Array.from($(SELECTORS.XPLATE.ALL_PLATES)).slice(1);
 
     plates.forEach((plate) => {
-      /**
-       * Another reminder: Attributes may have either 'undefined' or 'featured'.
-       * Exclude these cases.
-       */
       const plateElement = $(plate);
       const imgSrc = plateElement.find("img").attr("data-src") || "";
       const price =
@@ -81,6 +78,12 @@ const crawler = new CheerioCrawler({
     const nextPage = currentPage + 1;
     const nextUrl = `https://xplate.com/en/numbers/license-plates?page=${nextPage}`;
     await enqueueLinks({ urls: [nextUrl] });
+
+    pagePerformances.push({
+      pageNumber: currentPage,
+      durationMs: pageDurationMs,
+      durationSec: pageDurationSec,
+    });
   },
   maxRequestsPerCrawl: 2000,
   maxConcurrency: 200,
@@ -120,7 +123,7 @@ export const xplateRunner = async (): Promise<Plate[]> => {
     endTime: new Date(endTime),
     totalDurationMs,
     totalDurationSec,
-    pagePerformances: [],
+    pagePerformances,
   });
 
   await performanceRecord.save();

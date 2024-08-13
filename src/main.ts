@@ -6,9 +6,8 @@ import { platesAeRunner } from "./scrapers/plates.js";
 import { xplateRunner } from "./scrapers/xplate.js";
 import { Plate } from "./types/plates.js";
 import { plate } from "./Database/schemas/plates.schema.js";
-import { OperationPerformance } from "./Database/schemas/performanceTracking.js"
+import { OperationPerformance } from "./Database/schemas/performanceTracking.js";
 import dotenv from "dotenv";
-
 dotenv.config();
 
 const extractAllPlates = async (): Promise<Plate[]> => {
@@ -43,9 +42,8 @@ const extractAllPlates = async (): Promise<Plate[]> => {
 
   try {
     await performanceRecord.save();
-    console.log("Operation performance metrics have been saved");
   } catch (error) {
-    console.error("Error saving performance metrics to database:", error);
+    console.error("Error saving performance to database:", error);
   }
 
   return allPlates;

@@ -4,8 +4,7 @@ import { Plate } from "../types/plates.js";
 import SELECTORS from "../config/selectors.js";
 import { validatePlate } from "../validation/zod.js";
 import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
-
-const baseUrl = "https://www.plates.ae/plates-en/loadmore_one_plate.php";
+import { performanceType } from "../types/performance.js";
 
 const carPlates: Plate[] = [];
 
@@ -16,7 +15,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
   try {
     const pageStartTime = Date.now();
 
-    const response = await fetch(baseUrl, {
+    const response = await fetch(SELECTORS.PLATES_AE.BASE_URL, {
       method: "POST",
       headers: headers,
       body: data,
@@ -89,11 +88,7 @@ export const platesAeRunner = async () => {
   let page = 0;
   let hasMorePages = true;
 
-  const pagePerformances: {
-    pageNumber: number;
-    durationMs: number;
-    durationSec: number;
-  }[] = [];
+  const pagePerformances:performanceType[] = [];
 
   while (hasMorePages) {
     const batchStartTime = Date.now();

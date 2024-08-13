@@ -10,7 +10,7 @@ const plateSchema = z.object({
   character: z.string().max(3).optional(),
   number: z.string().optional(),
   contact: z.string().optional(),
-  source: z.string()
+  source: z.string(),
 });
 
 type ValidatedPlate = z.infer<typeof plateSchema>;

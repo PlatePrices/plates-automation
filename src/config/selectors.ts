@@ -45,6 +45,37 @@ const SELECTORS = {
       "user-agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
     },
+    DATA: (emirateId: number) => {
+      const data = JSON.stringify({
+        PlateFilterRequest: {
+          PlateTypeIds: {
+            Filter: [],
+            IsSelected: false,
+          },
+          PlateNumberDigitsCount: {
+            Filter: [],
+            IsSelected: false,
+          },
+          Codes: {
+            Filter: [],
+            IsSelected: false,
+          },
+          EndDates: {
+            Filter: [],
+            IsSelected: false,
+          },
+          Prices: {
+            From: "",
+            To: "",
+          },
+          AuctionTypeId: emirateId,
+        },
+        PageSize: 100,
+        PageIndex: 0,
+        IsDesc: false,
+      });
+      return data;
+    },
   },
   PLATES_AE: {
     HEADERS: {
@@ -68,30 +99,38 @@ const SELECTORS = {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
       "x-requested-with": "XMLHttpRequest",
     },
-
+    BASE_URL: "https://www.plates.ae/plates-en/loadmore_one_plate.php",
     ALL_PLATES: "li > div.col-xl-12",
     PRICE: "span.pricered",
     PLATE_NUMBER: ".plate_nub",
     CHARACTER: ".plate_code",
   },
   NUMBERS_AE: {
-    HEADERS:  { 
-    'Accept': 'text/html, */*; q=0.01', 
-    'Accept-Language': 'en-US,en;q=0.9', 
-    'Connection': 'keep-alive', 
-    'Cookie': 'PHPSESSID=qkedaruvrba8s9h7c930drcjli; language=e6b6636a45c9370f36c37eaf375eedf6c2b3c04563ba4b73f1befe65d6e4aae1a%3A2%3A%7Bi%3A0%3Bs%3A8%3A%22language%22%3Bi%3A1%3Bs%3A5%3A%22en-US%22%3B%7D; _csrf=711dcab117928f3929ed379afd9858785183fbb8f6a3a495a3a412242a21e74aa%3A2%3A%7Bi%3A0%3Bs%3A5%3A%22_csrf%22%3Bi%3A1%3Bs%3A32%3A%22h72BS2HTAbECfwMAli7SxxKHFgjRrpff%22%3B%7D; _gid=GA1.2.709611335.1723518278; _ym_uid=1723518279255961743; _ym_d=1723518279; _ym_isad=1; _ym_visorc=w; _gat_gtag_UA_49597849_1=1; _gat=1; _ga_JB4FEQRP8E=GS1.1.1723518277.1.1.1723518379.0.0.0; _ga=GA1.1.1364818131.1723518278', 
-    'DNT': '1', 
-    'Referer': 'https://www.numbers.ae/plate', 
-    'Sec-Fetch-Dest': 'empty', 
-    'Sec-Fetch-Mode': 'cors', 
-    'Sec-Fetch-Site': 'same-origin', 
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36', 
-    'X-CSRF-Token': 'ZmGFZnXUbRSd4EgwPgdJG--66Fa4L1qSqwOeIX-JWl4OVrckJuYlQNyCDXNYcARag9PfBcBXEdrtZPRzDfk8OA==', 
-    'X-Requested-With': 'XMLHttpRequest', 
-    'sec-ch-ua': '"Chromium";v="127", "Not)A;Brand";v="99"', 
-    'sec-ch-ua-mobile': '?0', 
-    'sec-ch-ua-platform': '"Windows"'
-  }
-  }
+    HEADERS: {
+      Accept: "text/html, */*; q=0.01",
+      "Accept-Language": "en-US,en;q=0.9",
+      Connection: "keep-alive",
+      Cookie:
+        "PHPSESSID=qkedaruvrba8s9h7c930drcjli; language=e6b6636a45c9370f36c37eaf375eedf6c2b3c04563ba4b73f1befe65d6e4aae1a%3A2%3A%7Bi%3A0%3Bs%3A8%3A%22language%22%3Bi%3A1%3Bs%3A5%3A%22en-US%22%3B%7D; _csrf=711dcab117928f3929ed379afd9858785183fbb8f6a3a495a3a412242a21e74aa%3A2%3A%7Bi%3A0%3Bs%3A5%3A%22_csrf%22%3Bi%3A1%3Bs%3A32%3A%22h72BS2HTAbECfwMAli7SxxKHFgjRrpff%22%3B%7D; _gid=GA1.2.709611335.1723518278; _ym_uid=1723518279255961743; _ym_d=1723518279; _ym_isad=1; _ym_visorc=w; _gat_gtag_UA_49597849_1=1; _gat=1; _ga_JB4FEQRP8E=GS1.1.1723518277.1.1.1723518379.0.0.0; _ga=GA1.1.1364818131.1723518278",
+      DNT: "1",
+      Referer: "https://www.numbers.ae/plate",
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "same-origin",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+      "X-CSRF-Token":
+        "ZmGFZnXUbRSd4EgwPgdJG--66Fa4L1qSqwOeIX-JWl4OVrckJuYlQNyCDXNYcARag9PfBcBXEdrtZPRzDfk8OA==",
+      "X-Requested-With": "XMLHttpRequest",
+      "sec-ch-ua": '"Chromium";v="127", "Not)A;Brand";v="99"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"Windows"',
+    },
+    ALL_PLATES: 'div[class="listings-container"] > div[class="row"] > div',
+    PRICE: 'div[class="col-sm-6 col-xs-12"]',
+    LINK: 'div[class="one-img"] > a',
+    SHARABLE_LINK: "https://www.numbers.ae",
+    SOURCE_NAME: "number.ae",
+  },
 };
 export default SELECTORS;

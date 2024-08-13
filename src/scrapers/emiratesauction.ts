@@ -1,24 +1,14 @@
 import fetch from "node-fetch";
 import getImageFromEmirate from "../utils/imagExtractor.js";
-import { Plate } from "../types/plates.js";
+import { emirates, Plate } from "../types/plates.js";
 import SELECTORS from "../config/selectors.js";
 import { validatePlate } from "../validation/zod.js";
 import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
-
-const emirates = {
-  SHARJAH: 23,
-  AJMAN: 27,
-  RAS_AL_KHAIMAH: 16,
-  FUJAIRAH: 14,
-};
+import { performanceType } from "../types/performance.js";
 
 export const emiratesAuctionRunner = async (): Promise<Plate[]> => {
   const results: Plate[] = [];
-  const pagePerformances: {
-    pageNumber: number;
-    durationMs: number;
-    durationSec: number;
-  }[] = [];
+  const pagePerformances: performanceType[] = [];
   let pageNumber = 0;
 
   const startTime = Date.now();
@@ -26,42 +16,13 @@ export const emiratesAuctionRunner = async (): Promise<Plate[]> => {
   for (const [emirateName, emirateId] of Object.entries(emirates)) {
     const pageStartTime = Date.now();
 
-    const data = JSON.stringify({
-      PlateFilterRequest: {
-        PlateTypeIds: {
-          Filter: [],
-          IsSelected: false,
-        },
-        PlateNumberDigitsCount: {
-          Filter: [],
-          IsSelected: false,
-        },
-        Codes: {
-          Filter: [],
-          IsSelected: false,
-        },
-        EndDates: {
-          Filter: [],
-          IsSelected: false,
-        },
-        Prices: {
-          From: "",
-          To: "",
-        },
-        AuctionTypeId: emirateId,
-      },
-      PageSize: 100,
-      PageIndex: 0,
-      IsDesc: false,
-    });
-
     const config = {
       method: "POST",
       headers: {
         ...SELECTORS.EMIRATES_AUCTION.HEADERS,
         "Content-Type": "application/json",
       },
-      body: data,
+      body: SELECTORS.EMIRATES_AUCTION.DATA(emirateId),
     };
 
     try {

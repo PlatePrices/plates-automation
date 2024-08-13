@@ -3,15 +3,12 @@ import { Plate } from "../types/plates.js";
 import SELECTORS from "../config/selectors.js";
 import { validatePlate } from "../validation/zod.js";
 import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
+import { performanceType } from "../types/performance.js";
 
 export const dubizzelRunner = async (): Promise<Plate[]> => {
   let pageNumber = 0;
   const results: Plate[] = [];
-  const pagePerformances: {
-    pageNumber: number;
-    durationMs: number;
-    durationSec: number;
-  }[] = [];
+  const pagePerformances: performanceType[] = [];
 
   const startTime = Date.now();
 
