@@ -4,10 +4,17 @@
     "type": "module",
     "description": "This is an example of a Crawlee project.",
     "dependencies": {
+        "@types/ajv": "^1.0.0",
         "@types/cheerio": "^0.22.35",
+        "ajv": "^8.17.1",
+        "ajv-formats": "^3.0.1",
         "axios": "^1.7.3",
         "cheerio": "^1.0.0",
-        "crawlee": "^3.0.0"
+        "crawlee": "^3.0.0",
+        "dotenv": "^16.4.5",
+        "mongoose": "^8.5.2",
+        "node-fetch": "^3.3.2",
+        "zod": "^3.23.8"
     },
     "devDependencies": {
         "@apify/tsconfig": "^0.1.0",

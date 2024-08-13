@@ -9,4 +9,5 @@ export type Plate = {
   character?: string;
   number?: string;
   contact?: string;
+  source: string;
 };

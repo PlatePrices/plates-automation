@@ -1,12 +1,11 @@
 import { CheerioCrawler } from "crawlee";
 import SELECTORS from "../config/selectors.js";
 import { Plate } from "../types/plates.js";
+import { validatePlate } from "../validation/zod.js";
 
-const startUrls = ["https://xplate.com/en/numbers/license-plates?page=2185"];
+const startUrls = ["https://xplate.com/en/numbers/license-plates?page=0"];
 
-
-
-const validPlates: Plate[] = [];
+const carPlates: Plate[] = [];
 
 const crawler = new CheerioCrawler({
   requestHandler: async ({ $, request, log, enqueueLinks }) => {
@@ -34,7 +33,8 @@ const crawler = new CheerioCrawler({
         plateElement.find(SELECTORS.XPLATE.PLATE_PRICE).text().trim() || "";
       const duration =
         plateElement.find(SELECTORS.XPLATE.PLATE_DURATION).text().trim() || "";
-      const link = plateElement.find(SELECTORS.XPLATE.PLATE_LINK).attr("href") || "";
+      const link =
+        plateElement.find(SELECTORS.XPLATE.PLATE_LINK).attr("href") || "";
 
       const emirateMatch = link.match(/\/(\d+)-(.+?)-code-/);
       const characterMatch = link.match(/code-(\d+)-/);
@@ -51,6 +51,7 @@ const crawler = new CheerioCrawler({
         emirate: emirate,
         character: character,
         number: number,
+        source: 'xplate'
       };
 
       if (
@@ -58,7 +59,7 @@ const crawler = new CheerioCrawler({
           (value) => value && value !== "featured" && value !== ""
         )
       ) {
-        validPlates.push(plateObj);
+        carPlates.push(plateObj);
       }
     });
 
@@ -74,8 +75,21 @@ const crawler = new CheerioCrawler({
   maxConcurrency: 200,
 });
 
-export const xplateRunner = async (): Promise<Plate []> => {
+export const xplateRunner = async (): Promise<Plate[]> => {
   await crawler.run(startUrls);
+  const validPlates: Plate[] = [];
+  for (const plate of carPlates) {
+    const isItValidPlate = await validatePlate(plate);
 
+    if (isItValidPlate) {
+      validPlates.push(plate);
+    } else {
+      console.log(
+        "Plate with the following attributes is not valid: ",
+        plate,
+        "xplate"
+      );
+    }
+  }
   return validPlates;
-}
+};

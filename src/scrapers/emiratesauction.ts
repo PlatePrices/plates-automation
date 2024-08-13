@@ -1,7 +1,7 @@
-import axios from "axios";
 import getImageFromEmirate from "../utils/imagExtractor.js";
 import { Plate } from "../types/plates.js";
 import SELECTORS from "../config/selectors.js";
+import { validatePlate } from "../validation/zod.js";
 
 const emirates = {
   SHARJAH: 23,
@@ -10,7 +10,7 @@ const emirates = {
   FUJAIRAH: 14,
 };
 
-export const emiratesAuctionRunner = async (): Promise<Plate []> => {
+export const emiratesAuctionRunner = async (): Promise<Plate[]> => {
   const results: Plate[] = [];
 
   for (const [emirateName, emirateId] of Object.entries(emirates)) {
@@ -43,17 +43,27 @@ export const emiratesAuctionRunner = async (): Promise<Plate []> => {
       IsDesc: false,
     });
 
-    const config = {
-      method: "post",
-      maxBodyLength: Infinity,
-      url: "https://apiv8.emiratesauction.net/api/PlatesBuyNow",
-      headers: SELECTORS.EMIRATES_AUCTION.HEADERS,
-      data: data,
+    const config: RequestInit = {
+      method: "POST",
+      headers: {
+        ...SELECTORS.EMIRATES_AUCTION.HEADERS,
+        "Content-Type": "application/json",
+      },
+      body: data,
     };
 
     try {
-      const response = await axios.request(config);
-      const carPlates = response.data["Data"];
+      const response = await fetch(
+        "https://apiv8.emiratesauction.net/api/PlatesBuyNow",
+        config
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      const carPlates = responseData["Data"];
 
       for (const carPlate of carPlates) {
         const link = carPlate["SharingLink"];
@@ -62,14 +72,26 @@ export const emiratesAuctionRunner = async (): Promise<Plate []> => {
         const character = carPlate["PlateCode"];
         const price = carPlate["Currency"] + " " + carPlate["CurrentPriceStr"];
 
-        results.push({
+        const newPlate: Plate = {
           link,
-          number,
+          number: `${number}`,
           img: img ? img : "",
           character,
           price,
           emirate: emirateName,
-        });
+          source: "Emirates auction"
+        };
+        const isItValidPlate = await validatePlate(newPlate);
+
+        if (isItValidPlate) {
+          results.push(newPlate);
+        } else {
+          console.log(
+            "Plate with the following attributes is not valid: ",
+            newPlate,
+            "emiratesauction"
+          );
+        }
       }
     } catch (error) {
       console.error(`Error fetching plate data for ${emirateName}: ${error}`);
@@ -78,5 +100,3 @@ export const emiratesAuctionRunner = async (): Promise<Plate []> => {
 
   return results;
 };
-
-

@@ -1,13 +1,13 @@
-import axios from "axios";
 import { Plate } from "../types/plates.js";
 import SELECTORS from "../config/selectors.js";
+import { validatePlate } from "../validation/zod.js";
 
 export const dubizzelRunner = async (): Promise<Plate[]> => {
   let pageNumber = 0;
   const results: Plate[] = [];
 
   while (true) {
-    let data = JSON.stringify({
+    const data = JSON.stringify({
       requests: [
         {
           indexName: "motors.com",
@@ -17,18 +17,26 @@ export const dubizzelRunner = async (): Promise<Plate[]> => {
       ],
     });
 
-    let config = {
-      method: "post",
-      maxBodyLength: Infinity,
-      url: "https://wd0ptz13zs-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(4.11.0);%20Browser%20(lite)&x-algolia-api-key=cef139620248f1bc328a00fddc7107a6&x-algolia-application-id=WD0PTZ13ZS",
-      headers: SELECTORS.DUBIZZEL.CONFIG.HEADERS,
-      data: data,
+    const config: RequestInit = {
+      method: "POST",
+      headers: {
+        ...SELECTORS.DUBIZZEL.CONFIG.HEADERS,
+        "Content-Type": "application/json",
+      },
+      body: data,
     };
 
     let errorPlate = null;
     try {
-      const response = await axios.request(config);
-      const carPlates = response.data["results"][0]["hits"];
+      const response = await fetch(
+        "https://wd0ptz13zs-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(4.11.0);%20Browser%20(lite)&x-algolia-api-key=cef139620248f1bc328a00fddc7107a6&x-algolia-application-id=WD0PTZ13ZS",
+        config
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const responseData = await response.json();
+      const carPlates = responseData["results"][0]["hits"];
 
       if (carPlates.length === 0) {
         break;
@@ -49,14 +57,26 @@ export const dubizzelRunner = async (): Promise<Plate[]> => {
           character = "";
         }
 
-        results.push({
-          link,
-          price,
-          number,
-          character,
-          img,
-          emirate,
-        });
+        if(character.length > 3) {
+          character = ""
+        }
+
+        const newPlate: Plate = {
+          link: link,
+          price: `${price}`,
+          number: `${number}`,
+          character: character,
+          img: img,
+          emirate: emirate,
+          source: "dubizzle"
+        };
+        const isItValidPlate = await validatePlate(newPlate);
+
+        if (isItValidPlate) {
+          results.push(newPlate);
+        } else {
+          console.log('Plate with the following attributes is not valid: ', newPlate, 'dubizzel')
+        }
       }
 
       pageNumber++;
