@@ -71,10 +71,6 @@ const fetchPage = async (page: number): Promise<boolean> => {
     const pageDurationMs = pageEndTime - pageStartTime;
     const pageDurationSec = pageDurationMs / 1000;
 
-    console.log(
-      `Page ${page} fetched in ${pageDurationMs} ms (${pageDurationSec} s)`
-    );
-
     return true;
   } catch (error) {
     console.error("Error fetching page:", error);
@@ -111,10 +107,6 @@ export const platesAeRunner = async () => {
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
   const totalDurationSec = totalDurationMs / 1000;
-
-  console.log(
-    `Scraping completed. Total duration: ${totalDurationMs} ms (${totalDurationSec} s)`
-  );
 
   const performanceRecord = new ScraperPerformance({
     scraperName: "platesAe",

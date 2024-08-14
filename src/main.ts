@@ -17,7 +17,7 @@ const extractAllPlates = async (): Promise<Plate[]> => {
   const plateGroups = await Promise.all([
     dubizzelRunner(),
     emiratesAuctionRunner(),
-    xplateRunner(),
+    // xplateRunner(),
     platesAeRunner(),
     numbersRunner(),
   ]);

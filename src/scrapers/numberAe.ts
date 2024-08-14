@@ -131,7 +131,6 @@ export const numbersRunner = async () => {
   const totalDurationMs = endTime - startTime;
   const totalDurationSec = totalDurationMs / 1000;
 
-  console.log(`Stopped at page ${stoppedPageNumber}`);
 
   const performanceRecord = new ScraperPerformance({
     scraperName: "numbers",
