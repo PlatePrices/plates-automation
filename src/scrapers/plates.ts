@@ -1,22 +1,23 @@
-import fetch from "node-fetch";
-import * as cheerio from "cheerio";
-import { Plate } from "../types/plates.js";
-import SELECTORS from "../config/selectors.js";
-import { validatePlate } from "../validation/zod.js";
-import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
-import { performanceType } from "../types/performance.js";
+import fetch from 'node-fetch';
+import * as cheerio from 'cheerio';
+import { Plate } from '../types/plates.js';
+import { validatePlate } from '../validation/zod.js';
+import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import { performanceType } from '../types/performance.js';
+import { PLATES_AE_SELECTORS } from '../config/plates.config.js';
+import { savingLogs } from '../utils/saveLogs.js';
 
 const carPlates: Plate[] = [];
 
 const fetchPage = async (page: number): Promise<boolean> => {
   const data = `page=${page}`;
-  const headers = SELECTORS.PLATES_AE.HEADERS;
+  const headers = PLATES_AE_SELECTORS.HEADERS;
 
   try {
     const pageStartTime = Date.now();
 
-    const response = await fetch(SELECTORS.PLATES_AE.BASE_URL, {
-      method: "POST",
+    const response = await fetch(PLATES_AE_SELECTORS.BASE_URL, {
+      method: 'POST',
       headers: headers,
       body: data,
     });
@@ -28,7 +29,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    const plates = Array.from($(SELECTORS.PLATES_AE.ALL_PLATES));
+    const plates = Array.from($(PLATES_AE_SELECTORS.ALL_PLATES));
     if (plates.length === 0) {
       return false;
     }
@@ -36,35 +37,34 @@ const fetchPage = async (page: number): Promise<boolean> => {
     plates.forEach((plate) => {
       const plateElement = $(plate);
       const price =
-        plateElement.find(SELECTORS.PLATES_AE.PRICE).text().trim() || "";
-      const link = plateElement.find("a").attr("href") || "";
-      const contact = plateElement.find("a").attr("href")?.slice(4, 15) || "";
+        plateElement.find(PLATES_AE_SELECTORS.PRICE).text().trim() || '';
+      const url = plateElement.find('a').attr('href') || '';
+      const contact = plateElement.find('a').attr('href')?.slice(4, 15) || '';
       const number =
-        plateElement.find(SELECTORS.PLATES_AE.PLATE_NUMBER).text().trim() || "";
+        plateElement.find(PLATES_AE_SELECTORS.PLATE_NUMBER).text().trim() || '';
       const character =
-        plateElement.find(SELECTORS.PLATES_AE.CHARACTER).text().trim() || "";
-      const img = plateElement.find("img").attr("src") || "";
+        plateElement.find(PLATES_AE_SELECTORS.CHARACTER).text().trim() || '';
+      const img = plateElement.find('img').attr('src') || '';
 
       const newPlate: Plate = {
-        link,
+        url,
         price,
         contact,
-        number,
+        number: parseInt(number),
         character,
-        img,
-        source: "plates.ae",
+        image: img,
+        source: PLATES_AE_SELECTORS.SOURCE_NAME,
       };
       const isItValidPlate = validatePlate(newPlate);
-
-      if (isItValidPlate) {
-        carPlates.push(newPlate);
-      } else {
+      if (!isItValidPlate) {
         console.log(
-          "Plate with the following attributes is not valid: ",
+          'Plate with the following attributes is not valid: ',
           newPlate,
-          "platesAe"
+          PLATES_AE_SELECTORS.SOURCE_NAME
         );
+        return;
       }
+      carPlates.push(newPlate);
     });
 
     const pageEndTime = Date.now();
@@ -73,7 +73,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
 
     return true;
   } catch (error) {
-    console.error("Error fetching page:", error);
+    console.error('Error fetching page:', error);
     return false;
   }
 };
@@ -84,7 +84,7 @@ export const platesAeRunner = async () => {
   let page = 0;
   let hasMorePages = true;
 
-  const pagePerformances:performanceType[] = [];
+  const pagePerformance: performanceType[] = [];
 
   while (hasMorePages) {
     const batchStartTime = Date.now();
@@ -95,7 +95,7 @@ export const platesAeRunner = async () => {
     const batchDurationMs = batchEndTime - batchStartTime;
     const batchDurationSec = batchDurationMs / 1000;
 
-    pagePerformances.push({
+    pagePerformance.push({
       pageNumber: page,
       durationMs: batchDurationMs,
       durationSec: batchDurationSec,
@@ -106,17 +106,20 @@ export const platesAeRunner = async () => {
 
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
-  const totalDurationSec = totalDurationMs / 1000;
 
   const performanceRecord = new ScraperPerformance({
-    scraperName: "platesAe",
+    scraperName: PLATES_AE_SELECTORS.SOURCE_NAME,
     startTime: new Date(startTime),
     endTime: new Date(endTime),
     totalDurationMs,
-    totalDurationSec,
-    pagePerformances,
+    pagePerformance,
   });
 
+  await savingLogs(
+    performanceRecord.startTime,
+    performanceRecord.totalDurationMs,
+    PLATES_AE_SELECTORS.SOURCE_NAME
+  );
   await performanceRecord.save();
 
   return carPlates;

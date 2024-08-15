@@ -1,13 +1,13 @@
 // not all attributes can exist in all scrapers so  I added the question mark just in case:
 
 export type Plate = {
-  link?: string;
-  img?: string;
+  url?: string;
+  image?: string;
   duration?: string;
   price?: string;
   emirate?: string;
   character?: string;
-  number?: string;
+  number?: number;
   contact?: string;
   source: string;
 };

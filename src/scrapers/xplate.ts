@@ -1,14 +1,15 @@
-import { CheerioCrawler } from "crawlee";
-import SELECTORS from "../config/selectors.js";
-import { Plate } from "../types/plates.js";
-import { validatePlate } from "../validation/zod.js";
-import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
-import { performanceType } from "../types/performance.js";
+import { CheerioCrawler } from 'crawlee';
+import SELECTORS from '../config/xplates.config.js';
+import { Plate } from '../types/plates.js';
+import { validatePlate } from '../validation/zod.js';
+import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import { performanceType } from '../types/performance.js';
+import { savingLogs } from '../utils/saveLogs.js';
 
-const startUrls = ["https://xplate.com/en/numbers/license-plates?page=0"];
+const startUrls = [SELECTORS.URL];
 
 const carPlates: Plate[] = [];
-const pagePerformances: performanceType[] = [];
+const pagePerformance: performanceType[] = [];
 
 const crawler = new CheerioCrawler({
   requestHandler: async ({ $, request, log, enqueueLinks }) => {
@@ -16,7 +17,7 @@ const crawler = new CheerioCrawler({
 
     log.info(`Scraping ${request.url}`);
 
-    if ($(SELECTORS.XPLATE.ERROR_MESSAGE_SELECTOR).length) {
+    if ($(SELECTORS.ERROR_MESSAGE_SELECTOR).length) {
       log.info(
         `This is the last page, there are no plates on this page ${request.url}. Stopping scraping.`
       );
@@ -24,39 +25,38 @@ const crawler = new CheerioCrawler({
     }
 
     // Reminder: Exclude the first element since it is not a plate as i inspected earlier
-    const plates = Array.from($(SELECTORS.XPLATE.ALL_PLATES)).slice(1);
+    const plates = Array.from($(SELECTORS.ALL_PLATES)).slice(1);
 
     plates.forEach((plate) => {
       const plateElement = $(plate);
-      const imgSrc = plateElement.find("img").attr("data-src") || "";
+      const imgSrc = plateElement.find('img').attr('data-src') || '';
       const price =
-        plateElement.find(SELECTORS.XPLATE.PLATE_PRICE).text().trim() || "";
+        plateElement.find(SELECTORS.PLATE_PRICE).text().trim() || '';
       const duration =
-        plateElement.find(SELECTORS.XPLATE.PLATE_DURATION).text().trim() || "";
-      const link =
-        plateElement.find(SELECTORS.XPLATE.PLATE_LINK).attr("href") || "";
+        plateElement.find(SELECTORS.PLATE_DURATION).text().trim() || '';
+      const url = plateElement.find(SELECTORS.PLATE_LINK).attr('href') || '';
 
-      const emirateMatch = link.match(/\/(\d+)-(.+?)-code-/);
-      const characterMatch = link.match(/code-(\d+)-/);
-      const numberMatch = link.match(/plate-number-(\d+)/);
+      const emirateMatch = url.match(/\/(\d+)-(.+?)-code-/);
+      const characterMatch = url.match(/code-(\d+)-/);
+      const numberMatch = url.match(/plate-number-(\d+)/);
 
-      const emirate = emirateMatch ? emirateMatch[2] : "";
-      const character = characterMatch ? characterMatch[1] : "";
-      const number = numberMatch ? numberMatch[1] : "";
+      const emirate = emirateMatch ? emirateMatch[2] : '';
+      const character = characterMatch ? characterMatch[1] : '';
+      const number = numberMatch ? numberMatch[1] : '';
       const plateObj: Plate = {
-        img: imgSrc,
+        image: imgSrc,
         price,
         duration,
-        link,
+        url,
         emirate: emirate,
         character: character,
-        number: number,
-        source: "xplate",
+        number: parseInt(number),
+        source: SELECTORS.SOURCE_NAME,
       };
 
       if (
         Object.values(plateObj).every(
-          (value) => value && value !== "featured" && value !== ""
+          (value) => value && value !== 'featured' && value !== ''
         )
       ) {
         carPlates.push(plateObj);
@@ -72,14 +72,14 @@ const crawler = new CheerioCrawler({
     );
 
     const currentPage = parseInt(
-      new URL(request.url).searchParams.get("page") || "1",
+      new URL(request.url).searchParams.get('page') || '1',
       10
     );
     const nextPage = currentPage + 1;
     const nextUrl = `https://xplate.com/en/numbers/license-plates?page=${nextPage}`;
     await enqueueLinks({ urls: [nextUrl] });
 
-    pagePerformances.push({
+    pagePerformance.push({
       pageNumber: currentPage,
       durationMs: pageDurationMs,
       durationSec: pageDurationSec,
@@ -89,43 +89,41 @@ const crawler = new CheerioCrawler({
   maxConcurrency: 200,
 });
 
-export const xplateRunner = async (): Promise<Plate[]> => {
+export const xplateRunner = async (): Promise<Plate[] | void> => {
   const startTime = Date.now();
 
   await crawler.run(startUrls);
 
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
-  const totalDurationSec = totalDurationMs / 1000;
-
-  console.log(
-    `Scraping completed. Total duration: ${totalDurationMs} ms (${totalDurationSec} s)`
-  );
 
   const validPlates: Plate[] = [];
   for (const plate of carPlates) {
-    const isItValidPlate = await validatePlate(plate);
-
-    if (isItValidPlate) {
-      validPlates.push(plate);
-    } else {
+    const isItValidPlate = validatePlate(plate);
+    if (!isItValidPlate) {
       console.log(
-        "Plate with the following attributes is not valid: ",
+        'Plate with the following attributes is not valid: ',
         plate,
-        "xplate"
+        'DUBIZZLE'
       );
+      return;
     }
+    validPlates.push(plate);
   }
 
   const performanceRecord = new ScraperPerformance({
-    scraperName: "xplate",
+    scraperName: SELECTORS.SOURCE_NAME,
     startTime: new Date(startTime),
     endTime: new Date(endTime),
     totalDurationMs,
-    totalDurationSec,
-    pagePerformances,
+    pagePerformance,
   });
 
+  await savingLogs(
+    performanceRecord.startTime,
+    performanceRecord.totalDurationMs,
+    SELECTORS.SOURCE_NAME
+  );
   await performanceRecord.save();
 
   return validPlates;

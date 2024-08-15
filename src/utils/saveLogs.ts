@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from 'axios';
 
 export const savingLogs = async (
   startTime: any,
@@ -12,15 +12,15 @@ export const savingLogs = async (
   };
 
   try {
-    await axios.post("https://in.logs.betterstack.com", logData, {
+    await axios.post('https://in.logs.betterstack.com', logData, {
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: process.env.BETTER_STACK_LOG_API_KEY,
       },
     });
   } catch (error) {
     console.error(
-      "Bro there was an error while sending data to betterstack",
+      'Bro there was an error while sending data to betterstack',
       error
     );
   }

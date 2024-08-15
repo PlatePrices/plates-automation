@@ -1,6 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { savingLogs } from "../../utils/saveLogs.js";
-import { ScraperPerformance as ScraperPerformanceType } from "../../types/performance.js";
+import mongoose, { Schema, Document } from 'mongoose';
+import { ScraperPerformance as ScraperPerformanceType } from '../../types/performance.js';
 
 const scraperPerformanceSchema: Schema<ScraperPerformanceType> = new Schema({
   scraperName: {
@@ -19,11 +18,7 @@ const scraperPerformanceSchema: Schema<ScraperPerformanceType> = new Schema({
     type: Number,
     required: true,
   },
-  totalDurationSec: {
-    type: Number,
-    required: true,
-  },
-  pagePerformances: [
+  pagePerformance: [
     {
       pageNumber: {
         type: Number,
@@ -41,19 +36,7 @@ const scraperPerformanceSchema: Schema<ScraperPerformanceType> = new Schema({
   ],
 });
 
-scraperPerformanceSchema.pre<ScraperPerformanceType>(
-  "save",
-  async function (next) {
-    try {
-      await savingLogs(this.startTime, this.totalDurationSec, this.scraperName);
-      next();
-    } catch (error) {
-      next(error as Error);
-    }
-  }
-);
-
 export const ScraperPerformance = mongoose.model<ScraperPerformanceType>(
-  "ScraperPerformance",
+  'ScraperPerformance',
   scraperPerformanceSchema
 );

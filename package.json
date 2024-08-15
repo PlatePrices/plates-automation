@@ -6,8 +6,6 @@
     "dependencies": {
         "@types/ajv": "^1.0.0",
         "@types/cheerio": "^0.22.35",
-        "ajv": "^8.17.1",
-        "ajv-formats": "^3.0.1",
         "axios": "^1.7.3",
         "cheerio": "^1.0.0",
         "crawlee": "^3.0.0",
@@ -19,6 +17,7 @@
     "devDependencies": {
         "@apify/tsconfig": "^0.1.0",
         "@types/node": "^20.0.0",
+        "prettier": "^3.3.3",
         "tsx": "^4.4.0",
         "typescript": "~5.5.0"
     },

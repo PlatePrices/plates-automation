@@ -8,7 +8,6 @@ type OperationPerformance = {
   startTime: Date;
   endTime: Date;
   totalDurationMs: number;
-  totalDurationSec: number;
 };
 
 type PagePerformance = {
@@ -22,8 +21,7 @@ type ScraperPerformance = {
   startTime: Date;
   endTime: Date;
   totalDurationMs: number;
-  totalDurationSec: number;
-  pagePerformances: PagePerformance[];
+  pagePerformance: PagePerformance[];
 };
 
 export { ScraperPerformance, OperationPerformance, performanceType };

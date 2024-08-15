@@ -1,8 +1,8 @@
-import mongoose, { Schema } from "mongoose";
-import { Plate } from "../../types/plates.js";
+import mongoose, { Schema } from 'mongoose';
+import { Plate } from '../../types/plates.js';
 
 const plateSchema: Schema<Plate> = new Schema({
-  link: {
+  url: {
     type: String,
     required: false,
   },
@@ -26,7 +26,7 @@ const plateSchema: Schema<Plate> = new Schema({
     type: String,
     required: false,
   },
-  img: {
+  image: {
     type: String,
     required: false,
   },
@@ -40,4 +40,4 @@ const plateSchema: Schema<Plate> = new Schema({
   },
 });
 
-export const plate = mongoose.model<Plate>("plate", plateSchema);
+export const plateCollection = mongoose.model<Plate>('plate', plateSchema);

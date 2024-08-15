@@ -1,67 +1,61 @@
-import fetch from "node-fetch";
-import * as cheerio from "cheerio";
-import { Plate } from "../types/plates.js";
-import SELECTORS from "../config/selectors.js";
-import { validatePlate } from "../validation/zod.js";
-import { ScraperPerformance } from "../Database/schemas/performance.schema.js";
-import { performanceType } from "../types/performance.js";
+import fetch from 'node-fetch';
+import * as cheerio from 'cheerio';
+import { Plate } from '../types/plates.js';
+import { validatePlate } from '../validation/zod.js';
+import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import { performanceType } from '../types/performance.js';
+import { NUMBERS_AE_SELECTORS } from '../config/numberAe.config.js';
+import { savingLogs } from '../utils/saveLogs.js';
 
 const carPlates: Plate[] = [];
 
 const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
-  const url = `https://www.numbers.ae/plate/index?page=${pageNumber}&per-page=19`;
-  const headers = SELECTORS.NUMBERS_AE.HEADERS;
+  const headers = NUMBERS_AE_SELECTORS.HEADERS;
 
   try {
-    const response = await fetch(url, { method: "GET", headers });
+    const response = await fetch(NUMBERS_AE_SELECTORS.URL(pageNumber), {
+      method: 'GET',
+      headers,
+    });
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    const plates = Array.from($(SELECTORS.NUMBERS_AE.ALL_PLATES));
+    const plates = Array.from($(NUMBERS_AE_SELECTORS.ALL_PLATES));
 
-    const validPlates = plates
-      .map((plate) => {
-        const plateElement = $(plate);
-        const price =
-          plateElement.find(SELECTORS.NUMBERS_AE.PRICE).text().trim() || "";
-        const link =
-          plateElement.find(SELECTORS.NUMBERS_AE.LINK).attr("href") || "";
-        const img = plateElement.find("img").attr("src") || "";
-        const altText = plateElement.find("img").attr("alt") || "";
+    const validPlates = plates.map((plate) => {
+      const plateElement = $(plate);
+      const price =
+        plateElement.find(NUMBERS_AE_SELECTORS.PRICE).text().trim() || '';
+      const link =
+        plateElement.find(NUMBERS_AE_SELECTORS.LINK).attr('href') || '';
+      const img = plateElement.find('img').attr('src') || '';
+      const altText = plateElement.find('img').attr('alt') || '';
 
-        const altTextPart = altText.split("number ")[1];
-        const character = altTextPart.charAt(0);
-        const number = altTextPart.split(" ")[1];
-        const duration = plateElement.find(".posted").text().trim();
-        const emirate = altText.split("Plate")[0].trim();
+      const altTextPart = altText.split('number ')[1];
+      const character = altTextPart.charAt(0);
+      const plateNumber = parseInt(altTextPart.split(' ')[1]);
+      const duration = plateElement.find('.posted').text().trim();
+      const emirate = altText.split('Plate')[0].trim();
 
-        const newPlate: Plate = {
-          img: SELECTORS.NUMBERS_AE.SHARABLE_LINK + img,
-          price: price,
-          link: SELECTORS.NUMBERS_AE.SHARABLE_LINK + link,
-          character,
-          number,
-          duration,
-          emirate,
-          source: SELECTORS.NUMBERS_AE.SOURCE_NAME,
-        };
+      const newPlate: Plate = {
+        image: NUMBERS_AE_SELECTORS.SHARABLE_LINK + img,
+        price: price,
+        url: NUMBERS_AE_SELECTORS.SHARABLE_LINK + link,
+        character,
+        number: plateNumber,
+        duration,
+        emirate,
+        source: NUMBERS_AE_SELECTORS.SOURCE_NAME,
+      };
 
-        const isItValidPlate = validatePlate(newPlate);
+      const isItValidPlate = validatePlate(newPlate);
 
-        if (isItValidPlate) {
-          return newPlate;
-        } else {
-          console.error(
-            "Plate with the following attributes is not valid: ",
-            newPlate,
-            "numberAe"
-          );
-          return undefined;
-        }
-      })
-      .filter((plate): plate is Plate => plate !== undefined);
+      if (isItValidPlate) {
+        return newPlate;
+      }
+    });
 
-    return validPlates;
+    return validPlates as Plate[];
   } catch (error) {
     console.error(`Error fetching page ${pageNumber}:`, error);
     return [];
@@ -73,8 +67,7 @@ export const numbersRunner = async () => {
 
   let pageNumber = 0;
   let stop = false;
-  let stoppedPageNumber = 0;
-  const pagePerformances: performanceType[] = [];
+  const pagePerformance: performanceType[] = [];
 
   /**
    * The idea in here is:
@@ -96,7 +89,7 @@ export const numbersRunner = async () => {
     const batchDurationMs = batchEndTime - batchStartTime;
     const batchDurationSec = batchDurationMs / 1000;
 
-    pagePerformances.push({
+    pagePerformance.push({
       pageNumber,
       durationMs: batchDurationMs,
       durationSec: batchDurationSec,
@@ -123,23 +116,25 @@ export const numbersRunner = async () => {
       );
     } else {
       stop = true;
-      stoppedPageNumber = pageNumber;
     }
   }
 
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
-  const totalDurationSec = totalDurationMs / 1000;
-
 
   const performanceRecord = new ScraperPerformance({
-    scraperName: "numbers",
+    scraperName: NUMBERS_AE_SELECTORS.SOURCE_NAME,
     startTime: new Date(startTime),
     endTime: new Date(endTime),
     totalDurationMs,
-    totalDurationSec,
-    pagePerformances,
+    pagePerformance,
   });
+
+  await savingLogs(
+    performanceRecord.startTime,
+    performanceRecord.totalDurationMs,
+    NUMBERS_AE_SELECTORS.SOURCE_NAME
+  );
 
   await performanceRecord.save();
 
