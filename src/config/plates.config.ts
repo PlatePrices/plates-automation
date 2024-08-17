@@ -1,5 +1,5 @@
 export const PLATES_AE_SELECTORS = {
-  SOURCE_NAME: 'plates.ae',
+  SOURCE_NAME: 'platesae',
   HEADERS: {
     accept: '*/*',
     'accept-language': 'en-US,en;q=0.9',

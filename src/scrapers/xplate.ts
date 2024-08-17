@@ -89,7 +89,7 @@ const crawler = new CheerioCrawler({
   maxConcurrency: 200,
 });
 
-export const xplateRunner = async (): Promise<Plate[] | void> => {
+export const scrapeXplatesPlates = async (): Promise<Plate[] | void> => {
   const startTime = Date.now();
 
   await crawler.run(startUrls);
@@ -99,7 +99,7 @@ export const xplateRunner = async (): Promise<Plate[] | void> => {
 
   const validPlates: Plate[] = [];
   for (const plate of carPlates) {
-    const isItValidPlate = validatePlate(plate);
+    const isItValidPlate = validatePlate(plate, SELECTORS.SOURCE_NAME);
     if (!isItValidPlate) {
       console.log(
         'Plate with the following attributes is not valid: ',

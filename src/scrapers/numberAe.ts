@@ -48,7 +48,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
         source: NUMBERS_AE_SELECTORS.SOURCE_NAME,
       };
 
-      const isItValidPlate = validatePlate(newPlate);
+      const isItValidPlate = validatePlate(newPlate, NUMBERS_AE_SELECTORS.SOURCE_NAME);
 
       if (isItValidPlate) {
         return newPlate;
@@ -62,7 +62,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
   }
 };
 
-export const numbersRunner = async () => {
+export const scrapeNumbersAePlates = async () => {
   const startTime = Date.now();
 
   let pageNumber = 0;

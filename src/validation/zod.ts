@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { Plate } from '../types/plates.js';
 
-const basePlateSchema = z.object({
+const BasePlateSchema = z.object({
   url: z.string().url(),
   number: z.number(),
   source: z.string(),
@@ -10,58 +10,53 @@ const basePlateSchema = z.object({
   character: z.string().max(2),
 });
 
-type BasePlate = z.infer<typeof basePlateSchema>;
+const DubizzlePlateSchema = BasePlateSchema.extend({
+  emirate: z.string(),
+});
 
-const PlatesWithEmirateSchema = basePlateSchema.extend({
+const XplateSchema = BasePlateSchema.extend({
   emirate: z.string(),
   duration: z.string(),
 });
 
-type PlatesWithEmirate = z.infer<typeof PlatesWithEmirateSchema>;
-
-const PlatesWithContactSchema = basePlateSchema.extend({
+const PlatesAeSchema = BasePlateSchema.extend({
   contact: z.string(),
 });
 
-type PlatesWithContact = z.infer<typeof PlatesWithContactSchema>;
+const NumberAeSchema = BasePlateSchema.extend({
+  duration: z.string(),
+  emirates: z.string(),
+});
 
-export const validatePlate = (
-  plate: Plate
-): plate is BasePlate | PlatesWithEmirate | PlatesWithContact => {
-  const baseValidationResult = basePlateSchema.safeParse(plate);
+const EmiratesAuctionSchema = BasePlateSchema.extend({
+  emirate: z.string(),
+});
 
-  if (!baseValidationResult.success) {
-    console.error(
-      'Validation errors in base schema:',
-      baseValidationResult.error.errors
-    );
+const schemaMap: Record<string, z.ZodTypeAny> = {
+  dubizzle: DubizzlePlateSchema,
+  xplate: XplateSchema,
+  platesae: PlatesAeSchema,
+  numberae: NumberAeSchema,
+  emiratesauction: EmiratesAuctionSchema,
+};
+
+export const validatePlate = (plate: Plate, website: string): boolean => {
+  const schema = schemaMap[website.toLowerCase()];
+
+  if (!schema) {
+    console.error(`No schema found for website: ${website}`);
     return false;
   }
 
-  const PlatesWithEmirateResult = PlatesWithEmirateSchema.safeParse(plate);
-  const PlatesWithContactResult = PlatesWithContactSchema.safeParse(plate);
+  const validationResult = schema.safeParse(plate);
 
-  if (PlatesWithEmirateResult.success) {
-    return true;
-  } else if (PlatesWithContactResult.success) {
+  if (validationResult.success) {
     return true;
   } else {
-    console.error('Validation errors in extended schemas:');
-
-    if (!PlatesWithEmirateResult.success) {
-      console.error(
-        'Conflict with PlatesWithEmirate schema:',
-        PlatesWithEmirateResult.error.errors
-      );
+    console.error(`Validation failed against ${website} schema:`);
+    for (const errorMessage of validationResult.error.errors) {
+      console.error(`error: ${errorMessage.message}`);
     }
-
-    if (!PlatesWithContactResult.success) {
-      console.error(
-        'Conflict with PlatesWithContact schema:',
-        PlatesWithContactResult.error.errors
-      );
-    }
-
     return false;
   }
 };

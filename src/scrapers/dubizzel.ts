@@ -6,7 +6,7 @@ import { performanceType } from '../types/performance.js';
 import { CONFIG, DUBIZZLE_SELECTORS } from '../config/dubizzle.config.js';
 import { savingLogs } from '../utils/saveLogs.js';
 
-export const dubizzleRunner = async (): Promise<Plate[] | void> => {
+export const scrapeDubizzlePlates = async (): Promise<Plate[] | void> => {
   let pageNumber = 0;
   const results: Plate[] = [];
   const pagePerformance: performanceType[] = [];
@@ -52,7 +52,7 @@ export const dubizzleRunner = async (): Promise<Plate[] | void> => {
           source: DUBIZZLE_SELECTORS.SOURCE_NAME,
         };
 
-        const isItValidPlate = validatePlate(newPlate);
+        const isItValidPlate = validatePlate(newPlate, DUBIZZLE_SELECTORS.SOURCE_NAME);
         if (!isItValidPlate) {
           console.log(
             'Plate with the following attributes is not valid: ',

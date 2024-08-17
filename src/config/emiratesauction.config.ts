@@ -1,5 +1,5 @@
 export const EMIRATES_AUCTION_SELECTORS = {
-  SOURCE_NAME: 'Emirates auction',
+  SOURCE_NAME: 'emiratesauction',
   URL: 'https://apiv8.emiratesauction.net/api/PlatesBuyNow',
   HEADERS: {
     accept: 'application/json, text/plain, */*',

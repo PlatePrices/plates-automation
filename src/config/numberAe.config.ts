@@ -21,7 +21,7 @@ export const NUMBERS_AE_SELECTORS = {
   PRICE: 'div[class="col-sm-6 col-xs-12"]',
   LINK: 'div[class="one-img"] > a',
   SHARABLE_LINK: 'https://www.numbers.ae',
-  SOURCE_NAME: 'number.ae',
+  SOURCE_NAME: 'numberae',
   URL: (pageNumber: number) => {
     return `https://www.numbers.ae/plate/index?page=${pageNumber}&per-page=19`;
   },

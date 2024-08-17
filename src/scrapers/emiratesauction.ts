@@ -7,7 +7,7 @@ import { performanceType } from '../types/performance.js';
 import { EMIRATES_AUCTION_SELECTORS } from '../config/emiratesauction.config.js';
 import { savingLogs } from '../utils/saveLogs.js';
 
-export const emiratesAuctionRunner = async (): Promise<Plate[] | void> => {
+export const scrapeEmiratesAuctionPlates = async (): Promise<Plate[] | void> => {
   const results: Plate[] = [];
   const pagePerformance: performanceType[] = [];
   let pageNumber = 0;
@@ -53,7 +53,7 @@ export const emiratesAuctionRunner = async (): Promise<Plate[] | void> => {
           source: EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
         };
 
-        const isItValidPlate = validatePlate(newPlate);
+        const isItValidPlate = validatePlate(newPlate, EMIRATES_AUCTION_SELECTORS.SOURCE_NAME);
         if (!isItValidPlate) {
           console.log(
             'Plate with the following attributes is not valid: ',

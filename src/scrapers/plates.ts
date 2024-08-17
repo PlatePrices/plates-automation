@@ -55,7 +55,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
         image: img,
         source: PLATES_AE_SELECTORS.SOURCE_NAME,
       };
-      const isItValidPlate = validatePlate(newPlate);
+      const isItValidPlate = validatePlate(newPlate, PLATES_AE_SELECTORS.SOURCE_NAME);
       if (!isItValidPlate) {
         console.log(
           'Plate with the following attributes is not valid: ',
@@ -78,7 +78,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
   }
 };
 
-export const platesAeRunner = async () => {
+export const scrapePlatesAePlates = async () => {
   const startTime = Date.now();
 
   let page = 0;
