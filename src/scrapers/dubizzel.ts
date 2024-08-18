@@ -1,10 +1,11 @@
 import fetch from 'node-fetch';
-import { Plate } from '../types/plates.js';
-import { validatePlate } from '../validation/zod.js';
+
+import { CONFIG, DUBIZZLE_SELECTORS } from '../config/dubizzle.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import { performanceType } from '../types/performance.js';
-import { CONFIG, DUBIZZLE_SELECTORS } from '../config/dubizzle.config.js';
+import { Plate } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
+import { DubizzlePlateSchema } from '../validation/zod.js';
 
 export const scrapeDubizzlePlates = async (): Promise<Plate[] | void> => {
   let pageNumber = 0;
@@ -34,9 +35,7 @@ export const scrapeDubizzlePlates = async (): Promise<Plate[] | void> => {
         const url = plate['absolute_url']['ar'];
         const image = plate['photos']['main'];
         const emirate = plate['site']['en'];
-        let character = plate['details']['Plate code']
-          ? plate['details']['Plate code']['ar']['value']
-          : '';
+        let character = plate['details']['Plate code'] ? plate['details']['Plate code']['ar']['value'] : '';
 
         if (character.length > 3) {
           character = '';
@@ -52,13 +51,9 @@ export const scrapeDubizzlePlates = async (): Promise<Plate[] | void> => {
           source: DUBIZZLE_SELECTORS.SOURCE_NAME,
         };
 
-        const isItValidPlate = validatePlate(newPlate, DUBIZZLE_SELECTORS.SOURCE_NAME);
+        const isItValidPlate = DubizzlePlateSchema.safeParse(newPlate, DUBIZZLE_SELECTORS.SOURCE_NAME);
         if (!isItValidPlate) {
-          console.log(
-            'Plate with the following attributes is not valid: ',
-            newPlate,
-            DUBIZZLE_SELECTORS.SOURCE_NAME
-          );
+          console.log('Plate with the following attributes is not valid: ', newPlate, DUBIZZLE_SELECTORS.SOURCE_NAME);
           return;
         }
         results.push(newPlate);
@@ -76,7 +71,7 @@ export const scrapeDubizzlePlates = async (): Promise<Plate[] | void> => {
 
       pageNumber++;
     } catch (error) {
-      console.error(`Error fetching data for page ${pageNumber}:`, error);
+      console.error(`Error fetching data for page ${pageNumber.toString()}:`, error);
       break;
     }
   }
@@ -93,10 +88,6 @@ export const scrapeDubizzlePlates = async (): Promise<Plate[] | void> => {
   });
 
   await performanceRecord.save();
-  await savingLogs(
-    performanceRecord.startTime,
-    performanceRecord.totalDurationMs,
-    DUBIZZLE_SELECTORS.SOURCE_NAME
-  );
+  await savingLogs(performanceRecord.startTime, performanceRecord.totalDurationMs, DUBIZZLE_SELECTORS.SOURCE_NAME);
   return results;
 };

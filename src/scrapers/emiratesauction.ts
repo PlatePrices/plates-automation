@@ -1,11 +1,12 @@
 import fetch from 'node-fetch';
-import getImageFromEmirate from '../utils/imagExtractor.js';
-import { emirates, Plate } from '../types/plates.js';
-import { validatePlate } from '../validation/zod.js';
+
+import { EMIRATES_AUCTION_SELECTORS } from '../config/emiratesauction.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import { performanceType } from '../types/performance.js';
-import { EMIRATES_AUCTION_SELECTORS } from '../config/emiratesauction.config.js';
+import { emirates, Plate } from '../types/plates.js';
+import getImageFromEmirate from '../utils/imagExtractor.js';
 import { savingLogs } from '../utils/saveLogs.js';
+import { validatePlate } from '../validation/zod.js';
 
 export const scrapeEmiratesAuctionPlates = async (): Promise<Plate[] | void> => {
   const results: Plate[] = [];
@@ -30,7 +31,7 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<Plate[] | void> => 
       const response = await fetch(EMIRATES_AUCTION_SELECTORS.URL, config);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        throw new Error(`HTTP error! Status: ${response.status.toString()}`);
       }
 
       const responseData = (await response.json()) as any;
@@ -58,14 +59,14 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<Plate[] | void> => 
           console.log(
             'Plate with the following attributes is not valid: ',
             newPlate,
-            EMIRATES_AUCTION_SELECTORS.SOURCE_NAME
+            EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
           );
           return;
         }
         results.push(newPlate);
       }
     } catch (error) {
-      console.error(`Error fetching plate data for ${emirateName}: ${error}`);
+      console.error(`Error fetching plate data for ${emirateName}`, error);
     } finally {
       const pageEndTime = Date.now();
       const pageDurationMs = pageEndTime - pageStartTime;
@@ -93,7 +94,7 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<Plate[] | void> => 
   await savingLogs(
     performanceRecord.startTime,
     performanceRecord.totalDurationMs,
-    EMIRATES_AUCTION_SELECTORS.SOURCE_NAME
+    EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
   );
   await performanceRecord.save();
 

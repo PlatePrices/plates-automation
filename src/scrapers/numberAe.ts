@@ -1,11 +1,12 @@
-import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
-import { Plate } from '../types/plates.js';
-import { validatePlate } from '../validation/zod.js';
+import fetch from 'node-fetch';
+
+import { NUMBERS_AE_SELECTORS } from '../config/numberAe.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import { performanceType } from '../types/performance.js';
-import { NUMBERS_AE_SELECTORS } from '../config/numberAe.config.js';
+import { Plate } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
+import { validatePlate } from '../validation/zod.js';
 
 const carPlates: Plate[] = [];
 
@@ -24,10 +25,8 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
 
     const validPlates = plates.map((plate) => {
       const plateElement = $(plate);
-      const price =
-        plateElement.find(NUMBERS_AE_SELECTORS.PRICE).text().trim() || '';
-      const link =
-        plateElement.find(NUMBERS_AE_SELECTORS.LINK).attr('href') || '';
+      const price = plateElement.find(NUMBERS_AE_SELECTORS.PRICE).text().trim() || '';
+      const link = plateElement.find(NUMBERS_AE_SELECTORS.LINK).attr('href') || '';
       const img = plateElement.find('img').attr('src') || '';
       const altText = plateElement.find('img').attr('alt') || '';
 
@@ -57,7 +56,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
 
     return validPlates as Plate[];
   } catch (error) {
-    console.error(`Error fetching page ${pageNumber}:`, error);
+    console.error(`Error fetching page ${pageNumber.toString()}:`, error);
     return [];
   }
 };
@@ -96,23 +95,15 @@ export const scrapeNumbersAePlates = async () => {
     });
 
     const allExist = batchPlates.every((newPlate) =>
-      carPlates.some(
-        (plate) =>
-          plate.character === newPlate.character &&
-          plate.number === newPlate.number
-      )
+      carPlates.some((plate) => plate.character === newPlate.character && plate.number === newPlate.number),
     );
 
     if (!allExist) {
       carPlates.push(
         ...batchPlates.filter(
           (newPlate) =>
-            !carPlates.some(
-              (plate) =>
-                plate.character === newPlate.character &&
-                plate.number === newPlate.number
-            )
-        )
+            !carPlates.some((plate) => plate.character === newPlate.character && plate.number === newPlate.number),
+        ),
       );
     } else {
       stop = true;
@@ -130,11 +121,7 @@ export const scrapeNumbersAePlates = async () => {
     pagePerformance,
   });
 
-  await savingLogs(
-    performanceRecord.startTime,
-    performanceRecord.totalDurationMs,
-    NUMBERS_AE_SELECTORS.SOURCE_NAME
-  );
+  await savingLogs(performanceRecord.startTime, performanceRecord.totalDurationMs, NUMBERS_AE_SELECTORS.SOURCE_NAME);
 
   await performanceRecord.save();
 

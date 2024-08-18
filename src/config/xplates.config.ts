@@ -4,8 +4,7 @@ const XPLATES_SELECTORS = {
   ALL_PLATES: 'div.col-6.col-sm-4.my-1.p-1',
   PLATE_PRICE: 'span.custom-red.dm-white',
   PLATE_DURATION: 'div.d-flex.align-items-center.meta > div > span',
-  PLATE_LINK:
-    'div.post.post-grid.rounded.bordered.p-1.h-100.dm-bordered > div > a',
+  PLATE_LINK: 'div.post.post-grid.rounded.bordered.p-1.h-100.dm-bordered > div > a',
   URL: 'https://xplate.com/en/numbers/license-plates?page=0',
 };
 export default XPLATES_SELECTORS;

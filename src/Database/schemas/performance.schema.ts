@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
+
 import { ScraperPerformance as ScraperPerformanceType } from '../../types/performance.js';
 
 const scraperPerformanceSchema: Schema<ScraperPerformanceType> = new Schema({
@@ -38,5 +39,5 @@ const scraperPerformanceSchema: Schema<ScraperPerformanceType> = new Schema({
 
 export const ScraperPerformance = mongoose.model<ScraperPerformanceType>(
   'ScraperPerformance',
-  scraperPerformanceSchema
+  scraperPerformanceSchema,
 );

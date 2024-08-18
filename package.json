@@ -1,33 +1,44 @@
 {
-    "name": "platesPrices",
+    "name": "plates-prices",
     "version": "0.0.1",
     "type": "module",
-    "description": "This is an example of a Crawlee project.",
+    "description": "A crawler that scrapes prices of plates",
+    "private": true,
+    "scripts": {
+        "dev": "nodemon -x node --loader ts-node/esm src/main.ts",
+        "lint:check": "eslint --ext .ts src",
+        "format": "prettier --write src",
+        "clean": "rimraf -G dist",
+        "build": "tsc",
+        "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+        "postinstall": "env-linter -s -d -vs node=20,npm=10"
+    },
     "dependencies": {
-        "@types/ajv": "^1.0.0",
-        "@types/cheerio": "^0.22.35",
-        "axios": "^1.7.3",
-        "cheerio": "^1.0.0",
-        "crawlee": "^3.0.0",
-        "dotenv": "^16.4.5",
-        "mongoose": "^8.5.2",
-        "node-fetch": "^3.3.2",
-        "zod": "^3.23.8"
+        "@types/cheerio": "0.22.35",
+        "axios": "1.7.3",
+        "cheerio": "1.0.0",
+        "crawlee": "3.0.0",
+        "dotenv": "16.4.5",
+        "env-var": "7.5.0",
+        "mongoose": "8.5.2",
+        "node-fetch": "3.3.2",
+        "ts-node": "10.9.2",
+        "zod": "3.23.8",
+        
+        "@typescript-eslint/eslint-plugin": "7.4.0",
+        "@typescript-eslint/parser": "7.4.0",
+        "eslint": "8.57.0",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-import": "2.29.1",
+        "typescript-eslint": "7.4.0"
     },
     "devDependencies": {
-        "@apify/tsconfig": "^0.1.0",
-        "@types/node": "^20.0.0",
-        "prettier": "^3.3.3",
-        "tsx": "^4.4.0",
-        "typescript": "~5.5.0"
+        "@apify/tsconfig": "0.1.0",
+        "@types/node": "20.0.0",
+        "env-linter": "2.0.0",
+        "nodemon": "3.1.4",
+        "prettier": "3.3.3",
+        "rimraf": "6.0.1"
     },
-    "scripts": {
-        "start": "npm run start:dev",
-        "start:prod": "node dist/main.js",
-        "start:dev": "tsx src/main.ts",
-        "build": "tsc",
-        "test": "echo \"Error: oops, the actor has no tests yet, sad!\" && exit 1"
-    },
-    "author": "It's not you it's me",
     "license": "ISC"
 }

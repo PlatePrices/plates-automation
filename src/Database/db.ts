@@ -1,13 +1,14 @@
 import mongoose from 'mongoose';
-import { DATABASE_CONFIG } from '../config/db.config.js';
-import { plateCollection } from './schemas/plates.schema.js';
+
+import { MONGODB_CONNECTION_URL } from '../config/config.js';
 import { Plate } from '../types/plates.js';
-import { savingLogs } from '../utils/saveLogs.js';
+
+import { plateCollection } from './schemas/plates.schema.js';
 
 export class Database {
   public async connectToDb(): Promise<void> {
     try {
-      await mongoose.connect(DATABASE_CONFIG.CONNECTION_STRING);
+      await mongoose.connect(MONGODB_CONNECTION_URL);
       console.log('MongoDb connected');
     } catch (error) {
       console.error('MongoDb connection error:', error);

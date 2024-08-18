@@ -1,20 +1,21 @@
-import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
-import { Plate } from '../types/plates.js';
-import { validatePlate } from '../validation/zod.js';
+import fetch from 'node-fetch';
+
+import { PLATES_AE_SELECTORS } from '../config/plates.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import { performanceType } from '../types/performance.js';
-import { PLATES_AE_SELECTORS } from '../config/plates.config.js';
+import { Plate } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
+import { validatePlate } from '../validation/zod.js';
 
 const carPlates: Plate[] = [];
 
 const fetchPage = async (page: number): Promise<boolean> => {
-  const data = `page=${page}`;
+  const data = `page=${page.toString()}`;
   const headers = PLATES_AE_SELECTORS.HEADERS;
 
   try {
-    const pageStartTime = Date.now();
+    // const pageStartTime = Date.now();
 
     const response = await fetch(PLATES_AE_SELECTORS.BASE_URL, {
       method: 'POST',
@@ -23,7 +24,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status.toString()}`);
     }
 
     const html = await response.text();
@@ -36,14 +37,11 @@ const fetchPage = async (page: number): Promise<boolean> => {
 
     plates.forEach((plate) => {
       const plateElement = $(plate);
-      const price =
-        plateElement.find(PLATES_AE_SELECTORS.PRICE).text().trim() || '';
+      const price = plateElement.find(PLATES_AE_SELECTORS.PRICE).text().trim() || '';
       const url = plateElement.find('a').attr('href') || '';
       const contact = plateElement.find('a').attr('href')?.slice(4, 15) || '';
-      const number =
-        plateElement.find(PLATES_AE_SELECTORS.PLATE_NUMBER).text().trim() || '';
-      const character =
-        plateElement.find(PLATES_AE_SELECTORS.CHARACTER).text().trim() || '';
+      const number = plateElement.find(PLATES_AE_SELECTORS.PLATE_NUMBER).text().trim() || '';
+      const character = plateElement.find(PLATES_AE_SELECTORS.CHARACTER).text().trim() || '';
       const img = plateElement.find('img').attr('src') || '';
 
       const newPlate: Plate = {
@@ -57,19 +55,15 @@ const fetchPage = async (page: number): Promise<boolean> => {
       };
       const isItValidPlate = validatePlate(newPlate, PLATES_AE_SELECTORS.SOURCE_NAME);
       if (!isItValidPlate) {
-        console.log(
-          'Plate with the following attributes is not valid: ',
-          newPlate,
-          PLATES_AE_SELECTORS.SOURCE_NAME
-        );
+        console.log('Plate with the following attributes is not valid: ', newPlate, PLATES_AE_SELECTORS.SOURCE_NAME);
         return;
       }
       carPlates.push(newPlate);
     });
 
-    const pageEndTime = Date.now();
-    const pageDurationMs = pageEndTime - pageStartTime;
-    const pageDurationSec = pageDurationMs / 1000;
+    // const pageEndTime = Date.now();
+    // const pageDurationMs = pageEndTime - pageStartTime;
+    // const pageDurationSec = pageDurationMs / 1000;
 
     return true;
   } catch (error) {
@@ -115,11 +109,7 @@ export const scrapePlatesAePlates = async () => {
     pagePerformance,
   });
 
-  await savingLogs(
-    performanceRecord.startTime,
-    performanceRecord.totalDurationMs,
-    PLATES_AE_SELECTORS.SOURCE_NAME
-  );
+  await savingLogs(performanceRecord.startTime, performanceRecord.totalDurationMs, PLATES_AE_SELECTORS.SOURCE_NAME);
   await performanceRecord.save();
 
   return carPlates;

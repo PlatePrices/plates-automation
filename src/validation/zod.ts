@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { Plate } from '../types/plates.js';
 
 const BasePlateSchema = z.object({
@@ -10,7 +11,7 @@ const BasePlateSchema = z.object({
   character: z.string().max(2),
 });
 
-const DubizzlePlateSchema = BasePlateSchema.extend({
+export const DubizzlePlateSchema = BasePlateSchema.extend({
   emirate: z.string(),
 });
 
@@ -23,7 +24,7 @@ const PlatesAeSchema = BasePlateSchema.extend({
   contact: z.string(),
 });
 
-const NumberAeSchema = BasePlateSchema.extend({
+export const NumberAeSchema = BasePlateSchema.extend({
   duration: z.string(),
   emirates: z.string(),
 });
@@ -31,6 +32,9 @@ const NumberAeSchema = BasePlateSchema.extend({
 const EmiratesAuctionSchema = BasePlateSchema.extend({
   emirate: z.string(),
 });
+
+const plateSchema = z.union([DubizzlePlateSchema, XplateSchema, PlatesAeSchema, NumberAeSchema, EmiratesAuctionSchema]);
+export type Plate = z.infer<typeof plateSchema>;
 
 const schemaMap: Record<string, z.ZodTypeAny> = {
   dubizzle: DubizzlePlateSchema,

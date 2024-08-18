@@ -1,13 +1,13 @@
+import dotenv from 'dotenv';
+
+import { Database } from './Database/db.js';
+import { OperationPerformance } from './Database/schemas/performanceTracking.js';
 import { scrapeDubizzlePlates } from './scrapers/dubizzel.js';
 import { scrapeEmiratesAuctionPlates } from './scrapers/emiratesauction.js';
 import { scrapeNumbersAePlates } from './scrapers/numberAe.js';
 import { scrapePlatesAePlates } from './scrapers/plates.js';
 import { scrapeXplatesPlates } from './scrapers/xplate.js';
 import { Plate } from './types/plates.js';
-import { plateCollection } from './Database/schemas/plates.schema.js';
-import { OperationPerformance } from './Database/schemas/performanceTracking.js';
-import dotenv from 'dotenv';
-import { Database } from './Database/db.js';
 
 dotenv.config();
 const database = new Database();
@@ -24,7 +24,9 @@ const extractAllPlates = async (): Promise<Plate[]> => {
 
   const allPlates: Plate[] = [];
   for (const plateGroup of plateGroups) {
-    for (const plate of plateGroup ?? []) {
+    if (!plateGroup) continue;
+
+    for (const plate of plateGroup) {
       allPlates.push(plate);
     }
   }
@@ -63,4 +65,4 @@ const run = async () => {
   await savePlatesToDb(plates);
 };
 
-run();
+void run();
