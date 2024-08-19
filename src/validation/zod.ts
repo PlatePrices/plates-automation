@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Plate } from '../types/plates.js';
+import { invalidPlatesInfo, Plate } from '../types/plates.js';
 
 const BasePlateSchema = z.object({
   url: z.string().url(),
@@ -15,26 +15,23 @@ export const DubizzlePlateSchema = BasePlateSchema.extend({
   emirate: z.string(),
 });
 
-const XplateSchema = BasePlateSchema.extend({
+export const XplateSchema = BasePlateSchema.extend({
   emirate: z.string(),
   duration: z.string(),
 });
 
-const PlatesAeSchema = BasePlateSchema.extend({
+export const PlatesAeSchema = BasePlateSchema.extend({
   contact: z.string(),
 });
 
 export const NumberAeSchema = BasePlateSchema.extend({
   duration: z.string(),
-  emirates: z.string(),
-});
-
-const EmiratesAuctionSchema = BasePlateSchema.extend({
   emirate: z.string(),
 });
 
-const plateSchema = z.union([DubizzlePlateSchema, XplateSchema, PlatesAeSchema, NumberAeSchema, EmiratesAuctionSchema]);
-export type Plate = z.infer<typeof plateSchema>;
+export const EmiratesAuctionSchema = BasePlateSchema.extend({
+  emirate: z.string(),
+});
 
 const schemaMap: Record<string, z.ZodTypeAny> = {
   dubizzle: DubizzlePlateSchema,
@@ -44,23 +41,24 @@ const schemaMap: Record<string, z.ZodTypeAny> = {
   emiratesauction: EmiratesAuctionSchema,
 };
 
-export const validatePlate = (plate: Plate, website: string): boolean => {
-  const schema = schemaMap[website.toLowerCase()];
+export const validatePlate = (plate: Plate, website: string): invalidPlatesInfo => {
+  // this is to ensure that was given is correct and is the schema map
+  const schema = schemaMap[website.toLowerCase()] as z.ZodTypeAny | undefined;
 
   if (!schema) {
     console.error(`No schema found for website: ${website}`);
-    return false;
+    return { isValid: false, data: plate };
   }
 
   const validationResult = schema.safeParse(plate);
 
   if (validationResult.success) {
-    return true;
+    return { isValid: true, data: plate };
   } else {
     console.error(`Validation failed against ${website} schema:`);
     for (const errorMessage of validationResult.error.errors) {
       console.error(`error: ${errorMessage.message}`);
     }
-    return false;
+    return { isValid: false, data: plate };
   }
 };

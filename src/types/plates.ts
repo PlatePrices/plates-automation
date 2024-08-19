@@ -19,3 +19,13 @@ export const emirates = {
   RAS_AL_KHAIMAH: 16,
   FUJAIRAH: 14,
 };
+
+export type invalidPlatesInfo = {
+  isValid: boolean;
+  data: Plate;
+};
+
+export type validAndInvalidPlates = {
+  validPlates: Plate[];
+  invalidPlates: Plate[];
+};

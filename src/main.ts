@@ -1,17 +1,18 @@
 import dotenv from 'dotenv';
 
-import { Database } from './Database/db.js';
+import database from './Database/db.js';
 import { OperationPerformance } from './Database/schemas/performanceTracking.js';
+import logger from './logger/winston.js';
 import { scrapeDubizzlePlates } from './scrapers/dubizzel.js';
 import { scrapeEmiratesAuctionPlates } from './scrapers/emiratesauction.js';
 import { scrapeNumbersAePlates } from './scrapers/numberAe.js';
 import { scrapePlatesAePlates } from './scrapers/plates.js';
 import { scrapeXplatesPlates } from './scrapers/xplate.js';
-import { Plate } from './types/plates.js';
 
 dotenv.config();
-const database = new Database();
-const extractAllPlates = async (): Promise<Plate[]> => {
+
+const extractAllPlates = async (): Promise<void> => {
+  logger.info('starting scraping');
   const startTime = Date.now();
   await database.connectToDb();
   const plateGroups = await Promise.all([
@@ -22,12 +23,12 @@ const extractAllPlates = async (): Promise<Plate[]> => {
     scrapeXplatesPlates(),
   ]);
 
-  const allPlates: Plate[] = [];
   for (const plateGroup of plateGroups) {
-    if (!plateGroup) continue;
-
-    for (const plate of plateGroup) {
-      allPlates.push(plate);
+    if (plateGroup.validPlates.length !== 0) {
+      await database.addValidPlates(plateGroup.validPlates);
+    }
+    if (plateGroup.invalidPlates.length !== 0) {
+      await database.addInvalidPlates(plateGroup.invalidPlates);
     }
   }
 
@@ -45,24 +46,10 @@ const extractAllPlates = async (): Promise<Plate[]> => {
   try {
     await performanceRecord.save();
   } catch (error) {
-    console.error('Error saving performance to database:', error);
+    logger.error(`Error saving the performance in the database`, error);
   }
-
-  return allPlates;
+  logger.info('finished scraping');
 };
 
-const savePlatesToDb = async (plates: Plate[]) => {
-  try {
-    await database.addPlates(plates);
-    console.log('All plates have been saved');
-  } catch (error) {
-    console.error('Error saving plates to database:', error);
-  }
-};
+void extractAllPlates();
 
-const run = async () => {
-  const plates = await extractAllPlates();
-  await savePlatesToDb(plates);
-};
-
-void run();

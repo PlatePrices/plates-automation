@@ -1,110 +1,96 @@
-import { CheerioCrawler } from 'crawlee';
-
-import SELECTORS from '../config/xplates.config.js';
-import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
-import { performanceType } from '../types/performance.js';
-import { Plate } from '../types/plates.js';
-import { savingLogs } from '../utils/saveLogs.js';
+import fetch from 'node-fetch';
+import XPLATES_SELECTORS from '../config/xplates.config.js';
+import * as cheerio from 'cheerio';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
 import { validatePlate } from '../validation/zod.js';
+import { performanceType } from '../types/performance.js';
+import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import { savingLogs } from '../utils/saveLogs.js';
 
-const startUrls = [SELECTORS.URL];
-
-const carPlates: Plate[] = [];
+const validPlates: Plate[] = [];
+const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
+let shouldContinue = true;
 
-const crawler = new CheerioCrawler({
-  requestHandler: async ({ $, request, log, enqueueLinks }) => {
-    const pageStartTime = Date.now();
+const fetchXplatePage = async (pageNumber: number) => {
+  const pageStartTime = Date.now();
+  const response = await fetch(
+    `https://xplate.com/en/numbers/license-plates?page=${pageNumber.toString()}`,
+    XPLATES_SELECTORS.CONFIG,
+  );
+  const html = await response.text();
+  const $ = cheerio.load(html);
 
-    log.info(`Scraping ${request.url}`);
+  if ($(XPLATES_SELECTORS.ERROR_MESSAGE_SELECTOR).length) {
+    shouldContinue = false;
+    return;
+  }
+  const plates = Array.from($(XPLATES_SELECTORS.ALL_PLATES)).slice(1);
 
-    if ($(SELECTORS.ERROR_MESSAGE_SELECTOR).length) {
-      log.info(`This is the last page, there are no plates on this page ${request.url}. Stopping scraping.`);
-      return;
+  for (const plate of plates) {
+    const plateElement = $(plate);
+    const imgSrc = plateElement.find('img').attr('data-src') || '';
+    const price = plateElement.find(XPLATES_SELECTORS.PLATE_PRICE).text().trim() || '';
+    const duration = plateElement.find(XPLATES_SELECTORS.PLATE_DURATION).text().trim() || '';
+    const url = plateElement.find(XPLATES_SELECTORS.PLATE_LINK).attr('href') || '';
+
+    const emirateMatch = url.match(/\/(\d+)-(.+?)-code-/);
+    const characterMatch = url.match(/-code-(.+?)-plate-number-/);
+    const numberMatch = url.match(/plate-number-(\d+)/);
+
+    const emirate = emirateMatch ? emirateMatch[2] : '';
+    const character = characterMatch ? characterMatch[1] : '';
+    const number = numberMatch ? numberMatch[1] : '';
+
+    const newPlate: Plate = {
+      image: imgSrc,
+      price,
+      duration,
+      url,
+      emirate: emirate,
+      character: character,
+      number: parseInt(number),
+      source: XPLATES_SELECTORS.SOURCE_NAME,
+    };
+
+    const plateValidation = validatePlate(newPlate, XPLATES_SELECTORS.SOURCE_NAME);
+    if (!plateValidation.isValid && plateValidation.data !== undefined) {
+      invalidPlates.push(plateValidation.data);
+    } else {
+      validPlates.push(newPlate);
     }
+  }
+  const pageEndTime = Date.now();
+  const pageDurationMs = pageEndTime - pageStartTime;
+  const pageDurationSec = pageDurationMs / 1000;
 
-    // Reminder: Exclude the first element since it is not a plate as i inspected earlier
-    const plates = Array.from($(SELECTORS.ALL_PLATES)).slice(1);
+  pagePerformance.push({
+    pageNumber: pageNumber,
+    durationMs: pageDurationMs,
+    durationSec: pageDurationSec,
+  });
+};
 
-    plates.forEach((plate) => {
-      const plateElement = $(plate);
-      const imgSrc = plateElement.find('img').attr('data-src') || '';
-      const price = plateElement.find(SELECTORS.PLATE_PRICE).text().trim() || '';
-      const duration = plateElement.find(SELECTORS.PLATE_DURATION).text().trim() || '';
-      const url = plateElement.find(SELECTORS.PLATE_LINK).attr('href') || '';
-
-      const emirateMatch = url.match(/\/(\d+)-(.+?)-code-/);
-      const characterMatch = url.match(/code-(\d+)-/);
-      const numberMatch = url.match(/plate-number-(\d+)/);
-
-      const emirate = emirateMatch ? emirateMatch[2] : '';
-      const character = characterMatch ? characterMatch[1] : '';
-      const number = numberMatch ? numberMatch[1] : '';
-      const plateObj: Plate = {
-        image: imgSrc,
-        price,
-        duration,
-        url,
-        emirate: emirate,
-        character: character,
-        number: parseInt(number),
-        source: SELECTORS.SOURCE_NAME,
-      };
-
-      if (Object.values(plateObj).every((value) => value && value !== 'featured' && value !== '')) {
-        carPlates.push(plateObj);
-      }
-    });
-
-    const pageEndTime = Date.now();
-    const pageDurationMs = pageEndTime - pageStartTime;
-    const pageDurationSec = pageDurationMs / 1000;
-
-    log.info(`Page ${request.url} processed in ${pageDurationMs.toString()} ms (${pageDurationSec.toString()} s)`);
-
-    const currentPage = parseInt(new URL(request.url).searchParams.get('page') || '1', 10);
-    const nextPage = currentPage + 1;
-    const nextUrl = `https://xplate.com/en/numbers/license-plates?page=${nextPage.toString()}`;
-    await enqueueLinks({ urls: [nextUrl] });
-
-    pagePerformance.push({
-      pageNumber: currentPage,
-      durationMs: pageDurationMs,
-      durationSec: pageDurationSec,
-    });
-  },
-  maxRequestsPerCrawl: 2000,
-  maxConcurrency: 200,
-});
-
-export const scrapeXplatesPlates = async (): Promise<Plate[] | undefined> => {
+export const scrapeXplatesPlates = async (): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
+  let page = 1;
 
-  await crawler.run(startUrls);
-
+  while (shouldContinue) {
+    await fetchXplatePage(page);
+    page++;
+  }
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
-
-  const validPlates: Plate[] = [];
-  for (const plate of carPlates) {
-    const isItValidPlate = validatePlate(plate, SELECTORS.SOURCE_NAME);
-    if (!isItValidPlate) {
-      console.log('Plate with the following attributes is not valid: ', plate, 'DUBIZZLE');
-      return;
-    }
-    validPlates.push(plate);
-  }
-
   const performanceRecord = new ScraperPerformance({
-    scraperName: SELECTORS.SOURCE_NAME,
+    scraperName: XPLATES_SELECTORS.SOURCE_NAME,
     startTime: new Date(startTime),
     endTime: new Date(endTime),
     totalDurationMs,
     pagePerformance,
   });
 
-  await savingLogs(performanceRecord.startTime, performanceRecord.totalDurationMs, SELECTORS.SOURCE_NAME);
+  await savingLogs(performanceRecord.startTime, performanceRecord.totalDurationMs, XPLATES_SELECTORS.SOURCE_NAME);
   await performanceRecord.save();
 
-  return validPlates;
+  return { invalidPlates, validPlates };
 };

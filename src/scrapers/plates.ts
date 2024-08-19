@@ -4,11 +4,12 @@ import fetch from 'node-fetch';
 import { PLATES_AE_SELECTORS } from '../config/plates.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import { performanceType } from '../types/performance.js';
-import { Plate } from '../types/plates.js';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
 
-const carPlates: Plate[] = [];
+const validPlates: Plate[] = [];
+const invalidPlates: Plate[] = [];
 
 const fetchPage = async (page: number): Promise<boolean> => {
   const data = `page=${page.toString()}`;
@@ -53,17 +54,13 @@ const fetchPage = async (page: number): Promise<boolean> => {
         image: img,
         source: PLATES_AE_SELECTORS.SOURCE_NAME,
       };
-      const isItValidPlate = validatePlate(newPlate, PLATES_AE_SELECTORS.SOURCE_NAME);
-      if (!isItValidPlate) {
-        console.log('Plate with the following attributes is not valid: ', newPlate, PLATES_AE_SELECTORS.SOURCE_NAME);
-        return;
+      const plateValidation = validatePlate(newPlate, PLATES_AE_SELECTORS.SOURCE_NAME);
+      if (!plateValidation.isValid) {
+        invalidPlates.push(plateValidation.data);
+      } else {
+        validPlates.push(newPlate);
       }
-      carPlates.push(newPlate);
     });
-
-    // const pageEndTime = Date.now();
-    // const pageDurationMs = pageEndTime - pageStartTime;
-    // const pageDurationSec = pageDurationMs / 1000;
 
     return true;
   } catch (error) {
@@ -72,7 +69,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
   }
 };
 
-export const scrapePlatesAePlates = async () => {
+export const scrapePlatesAePlates = async (): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
 
   let page = 0;
@@ -112,5 +109,5 @@ export const scrapePlatesAePlates = async () => {
   await savingLogs(performanceRecord.startTime, performanceRecord.totalDurationMs, PLATES_AE_SELECTORS.SOURCE_NAME);
   await performanceRecord.save();
 
-  return carPlates;
+  return { validPlates, invalidPlates };
 };

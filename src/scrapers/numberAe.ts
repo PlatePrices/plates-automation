@@ -4,12 +4,12 @@ import fetch from 'node-fetch';
 import { NUMBERS_AE_SELECTORS } from '../config/numberAe.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import { performanceType } from '../types/performance.js';
-import { Plate } from '../types/plates.js';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
 
-const carPlates: Plate[] = [];
-
+const validPlates: Plate[] = [];
+const invalidPlates: Plate[] = [];
 const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
   const headers = NUMBERS_AE_SELECTORS.HEADERS;
 
@@ -47,9 +47,10 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
         source: NUMBERS_AE_SELECTORS.SOURCE_NAME,
       };
 
-      const isItValidPlate = validatePlate(newPlate, NUMBERS_AE_SELECTORS.SOURCE_NAME);
-
-      if (isItValidPlate) {
+      const plateValidation = validatePlate(newPlate, NUMBERS_AE_SELECTORS.SOURCE_NAME);
+      if (!plateValidation.isValid) {
+        invalidPlates.push(plateValidation.data);
+      } else {
         return newPlate;
       }
     });
@@ -61,7 +62,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
   }
 };
 
-export const scrapeNumbersAePlates = async () => {
+export const scrapeNumbersAePlates = async (): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
 
   let pageNumber = 0;
@@ -95,14 +96,14 @@ export const scrapeNumbersAePlates = async () => {
     });
 
     const allExist = batchPlates.every((newPlate) =>
-      carPlates.some((plate) => plate.character === newPlate.character && plate.number === newPlate.number),
+      validPlates.some((plate) => plate.character === newPlate.character && plate.number === newPlate.number),
     );
 
     if (!allExist) {
-      carPlates.push(
+      validPlates.push(
         ...batchPlates.filter(
           (newPlate) =>
-            !carPlates.some((plate) => plate.character === newPlate.character && plate.number === newPlate.number),
+            !validPlates.some((plate) => plate.character === newPlate.character && plate.number === newPlate.number),
         ),
       );
     } else {
@@ -125,5 +126,5 @@ export const scrapeNumbersAePlates = async () => {
 
   await performanceRecord.save();
 
-  return carPlates;
+  return { validPlates, invalidPlates };
 };

@@ -2,36 +2,42 @@ import fetch from 'node-fetch';
 
 import { CONFIG, DUBIZZLE_SELECTORS } from '../config/dubizzle.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import { DubizzleResponseData } from '../types/dubizzle.js';
 import { performanceType } from '../types/performance.js';
-import { Plate } from '../types/plates.js';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
-import { DubizzlePlateSchema } from '../validation/zod.js';
+import { validatePlate } from '../validation/zod.js';
 
-export const scrapeDubizzlePlates = async (): Promise<Plate[] | void> => {
+export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => {
   let pageNumber = 0;
-  const results: Plate[] = [];
+  const validPlates: Plate[] = [];
+  const invalidPlates: Plate[] = [];
   const pagePerformance: performanceType[] = [];
 
   const startTime = Date.now();
 
-  while (true) {
+  let shouldContinue = true;
+
+  while (shouldContinue) {
     const pageStartTime = Date.now();
 
     try {
       const response = await fetch(DUBIZZLE_SELECTORS.URL, CONFIG(pageNumber));
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        throw new Error(`HTTP error! Status: ${response.status.toString()}`);
       }
-      const responseData = (await response.json()) as any;
+
+      const responseData = (await response.json()) as DubizzleResponseData;
       const carPlates = responseData['results'][0]['hits'];
 
       if (carPlates.length === 0) {
+        shouldContinue = false;
         break;
       }
 
       for (const plate of carPlates) {
-        const price = plate['price'];
-        const number = plate['details']['Plate number']['ar']['value'];
+        const price = (plate['price']);
+        const number = Number(plate['details']['Plate number']['ar']['value']);
         const url = plate['absolute_url']['ar'];
         const image = plate['photos']['main'];
         const emirate = plate['site']['en'];
@@ -43,20 +49,21 @@ export const scrapeDubizzlePlates = async (): Promise<Plate[] | void> => {
 
         const newPlate: Plate = {
           url: url,
-          price: `${price}`,
-          number: parseInt(number),
+          price: String(price),
+          number: number,
           character: character,
           image: image,
           emirate: emirate,
           source: DUBIZZLE_SELECTORS.SOURCE_NAME,
         };
 
-        const isItValidPlate = DubizzlePlateSchema.safeParse(newPlate, DUBIZZLE_SELECTORS.SOURCE_NAME);
-        if (!isItValidPlate) {
-          console.log('Plate with the following attributes is not valid: ', newPlate, DUBIZZLE_SELECTORS.SOURCE_NAME);
-          return;
+        const plateValidation = validatePlate(newPlate, DUBIZZLE_SELECTORS.SOURCE_NAME);
+        if (!plateValidation.isValid) {
+          invalidPlates.push(plateValidation.data);
+          console.log;
+        } else {
+          validPlates.push(plateValidation.data);
         }
-        results.push(newPlate);
       }
 
       const pageEndTime = Date.now();
@@ -72,7 +79,7 @@ export const scrapeDubizzlePlates = async (): Promise<Plate[] | void> => {
       pageNumber++;
     } catch (error) {
       console.error(`Error fetching data for page ${pageNumber.toString()}:`, error);
-      break;
+      shouldContinue = false;
     }
   }
 
@@ -89,5 +96,5 @@ export const scrapeDubizzlePlates = async (): Promise<Plate[] | void> => {
 
   await performanceRecord.save();
   await savingLogs(performanceRecord.startTime, performanceRecord.totalDurationMs, DUBIZZLE_SELECTORS.SOURCE_NAME);
-  return results;
+  return { validPlates: validPlates, invalidPlates: invalidPlates };
 };

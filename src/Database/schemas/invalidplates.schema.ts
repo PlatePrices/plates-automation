@@ -2,7 +2,8 @@ import mongoose, { Schema } from 'mongoose';
 
 import { Plate } from '../../types/plates.js';
 
-const plateSchema: Schema<Plate> = new Schema({
+// it is basically the same structure as validPlates but only for invalid plates
+const invalidPlateSchema: Schema<Plate> = new Schema({
   url: {
     type: String,
     required: false,
@@ -37,8 +38,8 @@ const plateSchema: Schema<Plate> = new Schema({
   },
   source: {
     type: String,
-    required: false,
+    required: true,
   },
 });
 
-export const plateCollection = mongoose.model<Plate>('plate', plateSchema);
+export const invalidPlates = mongoose.model<Plate>('invalid_plates', invalidPlateSchema);

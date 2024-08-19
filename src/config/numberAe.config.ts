@@ -22,6 +22,6 @@ export const NUMBERS_AE_SELECTORS = {
   SHARABLE_LINK: 'https://www.numbers.ae',
   SOURCE_NAME: 'numberae',
   URL: (pageNumber: number) => {
-    return `https://www.numbers.ae/plate/index?page=${pageNumber}&per-page=19`;
+    return `https://www.numbers.ae/plate/index?page=${pageNumber.toString()}&per-page=19`;
   },
 };

@@ -2,14 +2,15 @@ import fetch from 'node-fetch';
 
 import { EMIRATES_AUCTION_SELECTORS } from '../config/emiratesauction.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import { emiratesauctionResponseData } from '../types/emiratesauction.js';
 import { performanceType } from '../types/performance.js';
-import { emirates, Plate } from '../types/plates.js';
-import getImageFromEmirate from '../utils/imagExtractor.js';
+import { emirates, Plate, validAndInvalidPlates } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
 
-export const scrapeEmiratesAuctionPlates = async (): Promise<Plate[] | void> => {
-  const results: Plate[] = [];
+export const scrapeEmiratesAuctionPlates = async (): Promise<validAndInvalidPlates> => {
+  const validPlates: Plate[] = [];
+  const invalidPlates: Plate[] = [];
   const pagePerformance: performanceType[] = [];
   let pageNumber = 0;
 
@@ -34,13 +35,13 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<Plate[] | void> => 
         throw new Error(`HTTP error! Status: ${response.status.toString()}`);
       }
 
-      const responseData = (await response.json()) as any;
+      const responseData = (await response.json()) as emiratesauctionResponseData;
       const carPlates = responseData['Data'];
 
       for (const carPlate of carPlates) {
         const url = carPlate['SharingLink'];
         const number = carPlate['PlateNumber'];
-        const img = await getImageFromEmirate(number);
+        const img = await EMIRATES_AUCTION_SELECTORS.extractImage(parseInt(number));
         const character = carPlate['PlateCode'];
         const price = carPlate['Currency'] + ' ' + carPlate['CurrentPriceStr'];
 
@@ -54,16 +55,12 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<Plate[] | void> => 
           source: EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
         };
 
-        const isItValidPlate = validatePlate(newPlate, EMIRATES_AUCTION_SELECTORS.SOURCE_NAME);
-        if (!isItValidPlate) {
-          console.log(
-            'Plate with the following attributes is not valid: ',
-            newPlate,
-            EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
-          );
-          return;
+        const plateValidation = validatePlate(newPlate, EMIRATES_AUCTION_SELECTORS.SOURCE_NAME);
+        if (!plateValidation.isValid) {
+          invalidPlates.push(plateValidation.data);
+        } else {
+          validPlates.push(newPlate);
         }
-        results.push(newPlate);
       }
     } catch (error) {
       console.error(`Error fetching plate data for ${emirateName}`, error);
@@ -98,5 +95,5 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<Plate[] | void> => 
   );
   await performanceRecord.save();
 
-  return results;
+  return { validPlates, invalidPlates };
 };
