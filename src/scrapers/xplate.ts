@@ -1,11 +1,12 @@
-import fetch from 'node-fetch';
-import XPLATES_SELECTORS from '../config/xplates.config.js';
 import * as cheerio from 'cheerio';
-import { Plate, validAndInvalidPlates } from '../types/plates.js';
-import { validatePlate } from '../validation/zod.js';
-import { performanceType } from '../types/performance.js';
+import fetch from 'node-fetch';
+
+import XPLATES_SELECTORS from '../config/xplates.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import { performanceType } from '../types/performance.js';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
+import { validatePlate } from '../validation/zod.js';
 
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
@@ -54,7 +55,7 @@ const fetchXplatePage = async (pageNumber: number) => {
     };
 
     const plateValidation = validatePlate(newPlate, XPLATES_SELECTORS.SOURCE_NAME);
-    if (!plateValidation.isValid && plateValidation.data !== undefined) {
+    if (!plateValidation.isValid) {
       invalidPlates.push(plateValidation.data);
     } else {
       validPlates.push(newPlate);

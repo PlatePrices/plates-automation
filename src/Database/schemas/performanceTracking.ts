@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+
 import { OperationPerformance } from '../../types/performance.js';
 
 const operationPerformanceSchema: Schema<OperationPerformance> = new mongoose.Schema({
