@@ -36,7 +36,7 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
       }
 
       for (const plate of carPlates) {
-        const price = (plate['price']);
+        const price = plate['price'];
         const number = Number(plate['details']['Plate number']['ar']['value']);
         const url = plate['absolute_url']['ar'];
         const image = plate['photos']['main'];
@@ -59,8 +59,9 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
 
         const plateValidation = validatePlate(newPlate, DUBIZZLE_SELECTORS.SOURCE_NAME);
         if (!plateValidation.isValid) {
+          if (character === 'Red') character = '';
           invalidPlates.push(plateValidation.data);
-          console.log;
+          console.log(plateValidation.data);
         } else {
           validPlates.push(plateValidation.data);
         }

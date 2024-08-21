@@ -52,4 +52,3 @@ const extractAllPlates = async (): Promise<void> => {
 };
 
 void extractAllPlates();
-

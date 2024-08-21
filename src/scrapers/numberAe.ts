@@ -30,9 +30,12 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
       const img = plateElement.find('img').attr('src') || '';
       const altText = plateElement.find('img').attr('alt') || '';
 
-      const altTextPart = altText.split('number ')[1];
-      const character = altTextPart.charAt(0);
-      const plateNumber = parseInt(altTextPart.split(' ')[1]);
+      const afterPlateNumber = altText.split('Plate number')[1].trim().split('for sale')[0].split(' ');
+
+      const plateNumber = afterPlateNumber.length > 2 ? afterPlateNumber[1].trim() : afterPlateNumber[0].trim();
+
+      const character = afterPlateNumber.length > 2 ? afterPlateNumber[0].trim() : '';
+
       const duration = plateElement.find('.posted').text().trim();
       const emirate = altText.split('Plate')[0].trim();
 

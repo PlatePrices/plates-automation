@@ -7,7 +7,7 @@ export type Plate = {
   price?: string;
   emirate?: string;
   character?: string;
-  number?: number;
+  number?: number | string;
   contact?: string;
   source: string;
 };

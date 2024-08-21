@@ -13,6 +13,9 @@ const BasePlateSchema = z.object({
 
 export const DubizzlePlateSchema = BasePlateSchema.extend({
   emirate: z.string(),
+  character: z.string().refine((val) => val === "Red" || val.length <= 2, {
+    message: "Character must be 'Red' or have a maximum length of 2 characters",
+  }),
 });
 
 export const XplateSchema = BasePlateSchema.extend({
@@ -24,9 +27,11 @@ export const PlatesAeSchema = BasePlateSchema.extend({
   contact: z.string(),
 });
 
+// I put the number as string in here since there are numbers string with x or any character indicating that the number has not been chosen yet
 export const NumberAeSchema = BasePlateSchema.extend({
   duration: z.string(),
   emirate: z.string(),
+  number: z.string(),
 });
 
 export const EmiratesAuctionSchema = BasePlateSchema.extend({
