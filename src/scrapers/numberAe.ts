@@ -3,6 +3,7 @@ import fetch from 'node-fetch';
 
 import { NUMBERS_AE_SELECTORS } from '../config/numberAe.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import logger from '../logger/winston.js';
 import { performanceType } from '../types/performance.js';
 import { Plate, validAndInvalidPlates } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
@@ -60,7 +61,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
 
     return validPlates as Plate[];
   } catch (error) {
-    console.error(`Error fetching page ${pageNumber.toString()}:`, error);
+    logger.error(`Error fetching page ${pageNumber.toString()}:`, error);
     return [];
   }
 };

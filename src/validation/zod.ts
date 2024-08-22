@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import logger from '../logger/winston.js';
 import { invalidPlatesInfo, Plate } from '../types/plates.js';
 
 const BasePlateSchema = z.object({
@@ -51,7 +52,7 @@ export const validatePlate = (plate: Plate, website: string): invalidPlatesInfo 
   const schema = schemaMap[website.toLowerCase()] as z.ZodTypeAny | undefined;
 
   if (!schema) {
-    console.error(`No schema found for website: ${website}`);
+    logger.error(`No schema found for website: ${website}`);
     return { isValid: false, data: plate };
   }
 
@@ -60,9 +61,9 @@ export const validatePlate = (plate: Plate, website: string): invalidPlatesInfo 
   if (validationResult.success) {
     return { isValid: true, data: plate };
   } else {
-    console.error(`Validation failed against ${website} schema:`);
+    logger.error(`Validation failed against ${website} schema:`);
     for (const errorMessage of validationResult.error.errors) {
-      console.error(`error: ${errorMessage.message}`);
+      logger.error(`error: ${errorMessage.message}`);
     }
     return { isValid: false, data: plate };
   }

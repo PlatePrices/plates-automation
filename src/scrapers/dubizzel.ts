@@ -1,7 +1,9 @@
 import fetch from 'node-fetch';
 
+import cacheScraper from '../cache/scraper.cache.js';
 import { CONFIG, DUBIZZLE_SELECTORS } from '../config/dubizzle.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import logger from '../logger/winston.js';
 import { DubizzleResponseData } from '../types/dubizzle.js';
 import { performanceType } from '../types/performance.js';
 import { Plate, validAndInvalidPlates } from '../types/plates.js';
@@ -17,7 +19,7 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
   const startTime = Date.now();
 
   let shouldContinue = true;
-
+  let isCached = false;
   while (shouldContinue) {
     const pageStartTime = Date.now();
 
@@ -61,9 +63,26 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
         if (!plateValidation.isValid) {
           if (character === 'Red') character = '';
           invalidPlates.push(plateValidation.data);
-          console.log(plateValidation.data);
         } else {
           validPlates.push(plateValidation.data);
+        }
+      }
+
+      if (!isCached) {
+        const cacheResult = await cacheScraper.cachePlates(validPlates, pageNumber, DUBIZZLE_SELECTORS.SOURCE_NAME);
+        if (cacheResult.hasMatch) {
+          if (cacheResult.data) {
+            logger.info('Plates were cached in the previous process. Retrieval is in the process');
+          } else {
+            logger.info('Plates were being saved for the next time');
+          }
+          shouldContinue = false;
+          isCached = true;
+        } else if (cacheResult.data) {
+          logger.info('Plates were saved for the next time to retrieve');
+          isCached = true;
+        } else {
+          logger.warn('Plates were not cached in the process nor found');
         }
       }
 
@@ -79,7 +98,8 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
 
       pageNumber++;
     } catch (error) {
-      console.error(`Error fetching data for page ${pageNumber.toString()}:`, error);
+      logger.error(`Error fetching data for page ${pageNumber.toString()}:`, error);
+
       shouldContinue = false;
     }
   }

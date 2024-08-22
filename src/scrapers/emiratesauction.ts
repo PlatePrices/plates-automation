@@ -2,11 +2,13 @@ import fetch from 'node-fetch';
 
 import { EMIRATES_AUCTION_SELECTORS } from '../config/emiratesauction.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import logger from '../logger/winston.js';
 import { emiratesauctionResponseData } from '../types/emiratesauction.js';
 import { performanceType } from '../types/performance.js';
-import { emirates, Plate, validAndInvalidPlates } from '../types/plates.js';
+import { Plate, emirates, validAndInvalidPlates } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
+
 
 export const scrapeEmiratesAuctionPlates = async (): Promise<validAndInvalidPlates> => {
   const validPlates: Plate[] = [];
@@ -63,7 +65,7 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<validAndInvalidPlat
         }
       }
     } catch (error) {
-      console.error(`Error fetching plate data for ${emirateName}`, error);
+      logger.error(`Error fetching plate data for ${emirateName}`, error)
     } finally {
       const pageEndTime = Date.now();
       const pageDurationMs = pageEndTime - pageStartTime;

@@ -1,10 +1,12 @@
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
+import cacheScraper from '../cache/scraper.cache.js';
 import { PLATES_AE_SELECTORS } from '../config/plates.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
+import logger from '../logger/winston.js';
 import { performanceType } from '../types/performance.js';
-import { Plate, validAndInvalidPlates } from '../types/plates.js';
+import { cachePlates, Plate, validAndInvalidPlates } from '../types/plates.js';
 import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
 
@@ -64,7 +66,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
 
     return true;
   } catch (error) {
-    console.error('Error fetching page:', error);
+    logger.error(`Error fetching page:`, error);
     return false;
   }
 };
@@ -74,13 +76,34 @@ export const scrapePlatesAePlates = async (): Promise<validAndInvalidPlates> => 
 
   let page = 0;
   let hasMorePages = true;
-
+  let isCached = false;
   const pagePerformance: performanceType[] = [];
 
   while (hasMorePages) {
     const batchStartTime = Date.now();
 
     hasMorePages = await fetchPage(page);
+    if (!isCached) {
+      const cacheResult: cachePlates = await cacheScraper.cachePlates(
+        validPlates,
+        page,
+        PLATES_AE_SELECTORS.SOURCE_NAME,
+      );
+      if (cacheResult.hasMatch) {
+        if (cacheResult.data) {
+          logger.info('Plates were cached in the previous process. Retrieval is in the process');
+        } else {
+          logger.info('Plates were being saved for the next time');
+        }
+        hasMorePages = false;
+        isCached = true;
+      } else if (cacheResult.data) {
+        logger.info('Plates were saved for the next time to retrieve');
+        isCached = true;
+      } else {
+        logger.warn('Plates were not cached in the process nor found');
+      }
+    }
 
     const batchEndTime = Date.now();
     const batchDurationMs = batchEndTime - batchStartTime;

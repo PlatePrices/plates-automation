@@ -29,3 +29,8 @@ export type validAndInvalidPlates = {
   validPlates: Plate[];
   invalidPlates: Plate[];
 };
+
+export type cachePlates = {
+  hasMatch: boolean;
+  data: Plate[] | undefined;
+};
