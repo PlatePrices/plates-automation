@@ -1,12 +1,11 @@
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
-import cacheScraper from '../cache/scraper.cache.js';
 import XPLATES_SELECTORS from '../config/xplates.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
-import logger from '../logger/winston.js';
 import { performanceType } from '../types/performance.js';
-import { cachePlates, Plate, validAndInvalidPlates } from '../types/plates.js';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
+import { checkLatestRecords } from '../utils/latestRecords.js';
 import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
 
@@ -81,23 +80,17 @@ export const scrapeXplatesPlates = async (): Promise<validAndInvalidPlates> => {
   while (shouldContinue) {
     await fetchXplatePage(page);
     if (!isCached) {
-      const cacheResult: cachePlates = await cacheScraper.BaseCachePlates(validPlates, page, XPLATES_SELECTORS.SOURCE_NAME);
-      if (cacheResult.hasMatch) {
-        if (cacheResult.data) {
-          shouldContinue = false;
-          logger.info('Plates were cached in the previous process. Retrieval is in the process');
-        } else {
-          logger.info('Plates were being saved for the next time');
-        }
-        
-        isCached = true;
-      } else if (cacheResult.data) {
-        logger.info('Plates were saved for the next time to retrieve');
-        isCached = true;
-      } else {
-        logger.warn('Plates were not cached in the process nor found');
-      }
+      const { isItCached, shouldItStop } = await checkLatestRecords(
+        shouldContinue,
+        isCached,
+        XPLATES_SELECTORS.SOURCE_NAME,
+        validPlates,
+        page,
+      );
+      isCached = isItCached;
+      shouldContinue = shouldItStop;
     }
+
     page++;
   }
   const endTime = Date.now();

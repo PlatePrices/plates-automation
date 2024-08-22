@@ -1,12 +1,12 @@
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
-import cacheScraper from '../cache/scraper.cache.js';
 import { NUMBERS_AE_SELECTORS } from '../config/numberAe.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import logger from '../logger/winston.js';
 import { performanceType } from '../types/performance.js';
 import { Plate, validAndInvalidPlates } from '../types/plates.js';
+import { checkLatestRecords } from '../utils/latestRecords.js';
 import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
 
@@ -91,25 +91,18 @@ export const scrapeNumbersAePlates = async (): Promise<validAndInvalidPlates> =>
       pageNumber++;
 
       if (!isCached) {
-        const cacheResult = await cacheScraper.BaseCachePlates(batchPlates, pageNumber, NUMBERS_AE_SELECTORS.SOURCE_NAME);
-        if (cacheResult.hasMatch) {
-          if (cacheResult.data) {
-            logger.info('Plates were cached in the previous process. Retrieval is in the process');
-            stop = true;
-          } else {
-            logger.info('Plates were being saved for the next time');
-          }
-          
-          isCached = true;
-        } else if (cacheResult.data) {
-          logger.info('Plates were saved for the next time to retrieve');
-          isCached = true;
-        } else {
-          logger.warn('Plates were not cached in the process nor found');
-        }
+        const { isItCached, shouldItStop } = await checkLatestRecords(
+          stop,
+          isCached,
+          NUMBERS_AE_SELECTORS.SOURCE_NAME,
+          validPlates,
+          pageNumber,
+        );
+        isCached = isItCached;
+        stop = shouldItStop;
       }
-      if(stop) break;
 
+      if (stop) break;
     }
 
     const batchEndTime = Date.now();

@@ -7,6 +7,7 @@ import logger from '../logger/winston.js';
 import { DubizzleResponseData } from '../types/dubizzle.js';
 import { performanceType } from '../types/performance.js';
 import { Plate, validAndInvalidPlates } from '../types/plates.js';
+import { checkLatestRecords } from '../utils/latestRecords.js';
 import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
 
@@ -66,6 +67,17 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
         } else {
           validPlates.push(plateValidation.data);
         }
+      }
+      if (!isCached) {
+        const { isItCached, shouldItStop } = await checkLatestRecords(
+          shouldContinue,
+          isCached,
+          DUBIZZLE_SELECTORS.SOURCE_NAME,
+          validPlates,
+          pageNumber,
+        );
+        isCached = isItCached;
+        shouldContinue = shouldItStop;
       }
 
       if (!isCached) {

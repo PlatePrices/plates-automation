@@ -66,7 +66,6 @@ export class cacheScraper extends RedisCache {
             }
           }
         }
-        console.log(`number of matches: ${numberOfMatchesFound.toString()}`)
         return { hasMatch: false, data: undefined };
       }
     }

@@ -1,6 +1,6 @@
 import winston from 'winston';
 
-import { colors, levels } from '../utils/winstonConfiguration.js';
+import { colors, levels } from '../config/winstonConfiguration.js';
 
 const logger = winston.createLogger({
   levels,
