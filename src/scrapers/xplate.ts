@@ -81,14 +81,15 @@ export const scrapeXplatesPlates = async (): Promise<validAndInvalidPlates> => {
   while (shouldContinue) {
     await fetchXplatePage(page);
     if (!isCached) {
-      const cacheResult: cachePlates = await cacheScraper.cachePlates(validPlates, page, XPLATES_SELECTORS.SOURCE_NAME);
+      const cacheResult: cachePlates = await cacheScraper.BaseCachePlates(validPlates, page, XPLATES_SELECTORS.SOURCE_NAME);
       if (cacheResult.hasMatch) {
         if (cacheResult.data) {
+          shouldContinue = false;
           logger.info('Plates were cached in the previous process. Retrieval is in the process');
         } else {
           logger.info('Plates were being saved for the next time');
         }
-        shouldContinue = false;
+        
         isCached = true;
       } else if (cacheResult.data) {
         logger.info('Plates were saved for the next time to retrieve');

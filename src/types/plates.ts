@@ -20,6 +20,13 @@ export const emirates = {
   FUJAIRAH: 14,
 };
 
+export const NumberOfMatchesForEachEmirate = {
+  AJMAN: 5,
+  SHARJAH: 5,
+  RAS_AL_KHAIMAH: 3,
+  FUJAIRAH: 2,
+};
+
 export type invalidPlatesInfo = {
   isValid: boolean;
   data: Plate;

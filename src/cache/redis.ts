@@ -28,7 +28,7 @@ export class RedisCache {
     }
   }
 
-  public async doesExist(source: string): Promise<boolean> {
+  public async doesKeyExist(source: string): Promise<boolean> {
     if (!(await this.isClientConnected())) {
       await this.connectToRedis();
     }

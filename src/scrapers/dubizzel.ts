@@ -69,7 +69,7 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
       }
 
       if (!isCached) {
-        const cacheResult = await cacheScraper.cachePlates(validPlates, pageNumber, DUBIZZLE_SELECTORS.SOURCE_NAME);
+        const cacheResult = await cacheScraper.BaseCachePlates(validPlates, pageNumber, DUBIZZLE_SELECTORS.SOURCE_NAME);
         if (cacheResult.hasMatch) {
           if (cacheResult.data) {
             logger.info('Plates were cached in the previous process. Retrieval is in the process');

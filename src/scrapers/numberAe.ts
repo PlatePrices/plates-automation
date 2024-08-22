@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
+import cacheScraper from '../cache/scraper.cache.js';
 import { NUMBERS_AE_SELECTORS } from '../config/numberAe.config.js';
 import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import logger from '../logger/winston.js';
@@ -78,6 +79,7 @@ export const scrapeNumbersAePlates = async (): Promise<validAndInvalidPlates> =>
    * there are some pages that has same plates nearly so my idea is just to scan each 10 pages and check if they exist or not
    * and so on so fourth
    */
+  let isCached = false;
   while (!stop) {
     const batchPlates: Plate[] = [];
 
@@ -87,6 +89,27 @@ export const scrapeNumbersAePlates = async (): Promise<validAndInvalidPlates> =>
       const pagePlates = await fetchPage(pageNumber);
       batchPlates.push(...pagePlates);
       pageNumber++;
+
+      if (!isCached) {
+        const cacheResult = await cacheScraper.BaseCachePlates(batchPlates, pageNumber, NUMBERS_AE_SELECTORS.SOURCE_NAME);
+        if (cacheResult.hasMatch) {
+          if (cacheResult.data) {
+            logger.info('Plates were cached in the previous process. Retrieval is in the process');
+            stop = true;
+          } else {
+            logger.info('Plates were being saved for the next time');
+          }
+          
+          isCached = true;
+        } else if (cacheResult.data) {
+          logger.info('Plates were saved for the next time to retrieve');
+          isCached = true;
+        } else {
+          logger.warn('Plates were not cached in the process nor found');
+        }
+      }
+      if(stop) break;
+
     }
 
     const batchEndTime = Date.now();

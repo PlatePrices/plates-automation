@@ -84,7 +84,7 @@ export const scrapePlatesAePlates = async (): Promise<validAndInvalidPlates> => 
 
     hasMorePages = await fetchPage(page);
     if (!isCached) {
-      const cacheResult: cachePlates = await cacheScraper.cachePlates(
+      const cacheResult: cachePlates = await cacheScraper.BaseCachePlates(
         validPlates,
         page,
         PLATES_AE_SELECTORS.SOURCE_NAME,
