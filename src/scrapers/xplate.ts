@@ -2,13 +2,10 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
 import XPLATES_SELECTORS from '../config/xplates.config.js';
-import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import { performanceType } from '../types/performance.js';
 import { Plate, validAndInvalidPlates } from '../types/plates.js';
-import { checkLatestRecords } from '../utils/latestRecords.js';
-import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
-
+import database from '../Database/db.js';
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
@@ -69,7 +66,6 @@ const fetchXplatePage = async (pageNumber: number) => {
   pagePerformance.push({
     pageNumber: pageNumber,
     durationMs: pageDurationMs,
-    durationSec: pageDurationSec,
   });
 };
 
@@ -79,32 +75,18 @@ export const scrapeXplatesPlates = async (): Promise<validAndInvalidPlates> => {
   let isCached = false;
   while (shouldContinue) {
     await fetchXplatePage(page);
-    if (!isCached) {
-      const { isItCached, shouldItStop } = await checkLatestRecords(
-        shouldContinue,
-        isCached,
-        XPLATES_SELECTORS.SOURCE_NAME,
-        validPlates,
-        page,
-      );
-      isCached = isItCached;
-      shouldContinue = shouldItStop;
-    }
 
     page++;
   }
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
-  const performanceRecord = new ScraperPerformance({
-    scraperName: XPLATES_SELECTORS.SOURCE_NAME,
-    startTime: new Date(startTime),
-    endTime: new Date(endTime),
+  const sourcePerformance = await database.saveSourceOperationPerformance(
+    XPLATES_SELECTORS.SOURCE_NAME,
+    new Date(startTime),
+    new Date(endTime),
     totalDurationMs,
-    pagePerformance,
-  });
+  );
 
-  await savingLogs(performanceRecord.startTime, performanceRecord.totalDurationMs, XPLATES_SELECTORS.SOURCE_NAME);
-  await performanceRecord.save();
-
+  await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance);
   return { invalidPlates, validPlates };
 };

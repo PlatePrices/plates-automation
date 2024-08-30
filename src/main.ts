@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 
 import database from './Database/db.js';
-import { OperationPerformance } from './Database/schemas/performanceTracking.js';
 import logger from './logger/winston.js';
 import { scrapeDubizzlePlates } from './scrapers/dubizzel.js';
 import { scrapeEmiratesAuctionPlates } from './scrapers/emiratesauction.js';
@@ -34,20 +33,8 @@ const extractAllPlates = async (): Promise<void> => {
 
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
-  const totalDurationSec = totalDurationMs / 1000;
 
-  const performanceRecord = new OperationPerformance({
-    startTime: new Date(startTime),
-    endTime: new Date(endTime),
-    totalDurationMs,
-    totalDurationSec,
-  });
-
-  try {
-    await performanceRecord.save();
-  } catch (error) {
-    logger.error(`Error saving the performance in the database`, error);
-  }
+  await database.saveMainOperationPerformance(new Date(startTime), new Date(endTime), totalDurationMs);
   logger.info('finished scraping');
 };
 

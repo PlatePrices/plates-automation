@@ -1,44 +1,56 @@
-import mongoose, { Schema } from 'mongoose';
+import { DataTypes } from 'sequelize';
 
-import { Plate } from '../../types/plates.js';
+import { sequalize } from '../../config/config.js';
 
-const plateSchema: Schema<Plate> = new Schema({
-  url: {
-    type: String,
-    required: false,
+const Plate = sequalize.define(
+  'Plate',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    number: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    url: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    source: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    price: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    character: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+    },
+    image: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    emirate: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    last_duration: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    contact: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
   },
-  price: {
-    type: String,
-    required: false,
+  {
+    tableName: 'plates',
+    timestamps: true,
   },
-  emirate: {
-    type: String,
-    required: false,
-  },
-  number: {
-    type: String,
-    required: false,
-  },
-  contact: {
-    type: String,
-    required: false,
-  },
-  duration: {
-    type: String,
-    required: false,
-  },
-  image: {
-    type: String,
-    required: false,
-  },
-  character: {
-    type: String,
-    required: false,
-  },
-  source: {
-    type: String,
-    required: false,
-  },
-});
+);
 
-export const plateCollection = mongoose.model<Plate>('plate', plateSchema);
+export default Plate;

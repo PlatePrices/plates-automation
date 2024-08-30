@@ -1,7 +1,6 @@
 type performanceType = {
   pageNumber: number;
   durationMs: number;
-  durationSec: number;
 };
 
 type OperationPerformance = {

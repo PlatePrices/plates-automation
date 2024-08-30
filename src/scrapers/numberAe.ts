@@ -2,14 +2,11 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
 import { NUMBERS_AE_SELECTORS } from '../config/numberAe.config.js';
-import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import logger from '../logger/winston.js';
 import { performanceType } from '../types/performance.js';
 import { Plate, validAndInvalidPlates } from '../types/plates.js';
-import { checkLatestRecords } from '../utils/latestRecords.js';
-import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
-
+import database from '../Database/db.js'
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
@@ -89,20 +86,6 @@ export const scrapeNumbersAePlates = async (): Promise<validAndInvalidPlates> =>
       const pagePlates = await fetchPage(pageNumber);
       batchPlates.push(...pagePlates);
       pageNumber++;
-
-      if (!isCached) {
-        const { isItCached, shouldItStop } = await checkLatestRecords(
-          stop,
-          isCached,
-          NUMBERS_AE_SELECTORS.SOURCE_NAME,
-          validPlates,
-          pageNumber,
-        );
-        isCached = isItCached;
-        stop = shouldItStop;
-      }
-
-      if (stop) break;
     }
 
     const batchEndTime = Date.now();
@@ -112,7 +95,6 @@ export const scrapeNumbersAePlates = async (): Promise<validAndInvalidPlates> =>
     pagePerformance.push({
       pageNumber,
       durationMs: batchDurationMs,
-      durationSec: batchDurationSec,
     });
 
     const allExist = batchPlates.every((newPlate) =>
@@ -134,17 +116,13 @@ export const scrapeNumbersAePlates = async (): Promise<validAndInvalidPlates> =>
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
 
-  const performanceRecord = new ScraperPerformance({
-    scraperName: NUMBERS_AE_SELECTORS.SOURCE_NAME,
-    startTime: new Date(startTime),
-    endTime: new Date(endTime),
+  const sourcePerformance = await database.saveSourceOperationPerformance(
+    NUMBERS_AE_SELECTORS.SOURCE_NAME,
+    new Date(startTime),
+    new Date(endTime),
     totalDurationMs,
-    pagePerformance,
-  });
+  );
 
-  await savingLogs(performanceRecord.startTime, performanceRecord.totalDurationMs, NUMBERS_AE_SELECTORS.SOURCE_NAME);
-
-  await performanceRecord.save();
-
+  await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance);
   return { validPlates, invalidPlates };
 };

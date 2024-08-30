@@ -1,45 +1,55 @@
-import mongoose, { Schema } from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { sequalize } from '../../config/config.js';
 
-import { Plate } from '../../types/plates.js';
+const InvalidPlate = sequalize.define(
+  'InvalidPlate',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    number: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    url: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    source: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    price: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    character: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+    },
+    image: {
+      type: DataTypes.BLOB,
+      allowNull: false,
+    },
+    emirate: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    last_duration: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    contact: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+  },
+  {
+    tableName: 'invalid_plates',
+    timestamps: true,
+  },
+);
 
-// it is basically the same structure as validPlates but only for invalid plates
-const invalidPlateSchema: Schema<Plate> = new Schema({
-  url: {
-    type: String,
-    required: false,
-  },
-  price: {
-    type: String,
-    required: false,
-  },
-  emirate: {
-    type: String,
-    required: false,
-  },
-  number: {
-    type: String,
-    required: false,
-  },
-  contact: {
-    type: String,
-    required: false,
-  },
-  duration: {
-    type: String,
-    required: false,
-  },
-  image: {
-    type: String,
-    required: false,
-  },
-  character: {
-    type: String,
-    required: false,
-  },
-  source: {
-    type: String,
-    required: true,
-  },
-});
-
-export const invalidPlates = mongoose.model<Plate>('invalid_plates', invalidPlateSchema);
+export default InvalidPlate;

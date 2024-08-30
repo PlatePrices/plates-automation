@@ -1,15 +1,12 @@
 import fetch from 'node-fetch';
 
-import cacheScraper from '../cache/scraper.cache.js';
 import { EMIRATES_AUCTION_SELECTORS } from '../config/emiratesauction.config.js';
-import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import logger from '../logger/winston.js';
 import { emiratesauctionResponseData } from '../types/emiratesauction.js';
 import { performanceType } from '../types/performance.js';
 import { NumberOfMatchesForEachEmirate, Plate, emirates, validAndInvalidPlates } from '../types/plates.js';
-import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
-
+import database from '../Database/db.js';
 export const scrapeEmiratesAuctionPlates = async (): Promise<validAndInvalidPlates> => {
   const validPlates: Plate[] = [];
   const invalidPlates: Plate[] = [];
@@ -67,27 +64,6 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<validAndInvalidPlat
           validPlates.push(newPlate);
           validPlatesForEachEmirate.push(newPlate);
         }
-
-        if (!isCached && validPlatesForEachEmirate.length >= leastNumberOfMatchesPerEmirate) {
-          const cacheResult = await cacheScraper.emiratesAuctionCachePlates(
-            validPlatesForEachEmirate,
-            `${EMIRATES_AUCTION_SELECTORS.SOURCE_NAME}_${emirateName}`,
-            emirateName,
-          );
-          if (cacheResult?.hasMatch) {
-            logger.info('Plates already exist. Retrieval is on the way');
-            isCached = true;
-            shouldStop = true;
-          } else {
-            if (cacheResult?.data) {
-              logger.info('Plates were just saved for the next time to retrieve');
-              isCached = true;
-            } else {
-              logger.warn('Plates were not set to cache or even found');
-            }
-          }
-        }
-        if (shouldStop) break;
       }
       logger.info(`${validPlatesForEachEmirate.length.toString()} for each emirate: ${emirateName}`);
     } catch (error) {
@@ -100,7 +76,6 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<validAndInvalidPlat
       pagePerformance.push({
         pageNumber: pageNumber++,
         durationMs: pageDurationMs,
-        durationSec: pageDurationSec,
       });
     }
   }
@@ -108,20 +83,14 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<validAndInvalidPlat
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
 
-  const performanceRecord = new ScraperPerformance({
-    scraperName: EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
-    startTime: new Date(startTime),
-    endTime: new Date(endTime),
-    totalDurationMs,
-    pagePerformance,
-  });
-
-  await savingLogs(
-    performanceRecord.startTime,
-    performanceRecord.totalDurationMs,
+  const sourcePerformance = await database.saveSourceOperationPerformance(
     EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
+    new Date(startTime),
+    new Date(endTime),
+    totalDurationMs,
   );
-  await performanceRecord.save();
+
+  await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance);
 
   return { validPlates, invalidPlates };
 };

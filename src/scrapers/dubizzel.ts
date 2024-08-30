@@ -1,16 +1,13 @@
 import fetch from 'node-fetch';
 
-import cacheScraper from '../cache/scraper.cache.js';
 import { CONFIG, DUBIZZLE_SELECTORS } from '../config/dubizzle.config.js';
-import { ScraperPerformance } from '../Database/schemas/performance.schema.js';
 import logger from '../logger/winston.js';
 import { DubizzleResponseData } from '../types/dubizzle.js';
 import { performanceType } from '../types/performance.js';
 import { Plate, validAndInvalidPlates } from '../types/plates.js';
-import { checkLatestRecords } from '../utils/latestRecords.js';
 import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
-
+import database from '../Database/db.js';
 export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => {
   let pageNumber = 0;
   const validPlates: Plate[] = [];
@@ -68,45 +65,10 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
           validPlates.push(plateValidation.data);
         }
       }
-      if (!isCached) {
-        const { isItCached, shouldItStop } = await checkLatestRecords(
-          shouldContinue,
-          isCached,
-          DUBIZZLE_SELECTORS.SOURCE_NAME,
-          validPlates,
-          pageNumber,
-        );
-        isCached = isItCached;
-        shouldContinue = shouldItStop;
-      }
-
-      if (!isCached) {
-        const cacheResult = await cacheScraper.BaseCachePlates(validPlates, pageNumber, DUBIZZLE_SELECTORS.SOURCE_NAME);
-        if (cacheResult.hasMatch) {
-          if (cacheResult.data) {
-            logger.info('Plates were cached in the previous process. Retrieval is in the process');
-          } else {
-            logger.info('Plates were being saved for the next time');
-          }
-          shouldContinue = false;
-          isCached = true;
-        } else if (cacheResult.data) {
-          logger.info('Plates were saved for the next time to retrieve');
-          isCached = true;
-        } else {
-          logger.warn('Plates were not cached in the process nor found');
-        }
-      }
 
       const pageEndTime = Date.now();
       const pageDurationMs = pageEndTime - pageStartTime;
       const pageDurationSec = pageDurationMs / 1000;
-
-      pagePerformance.push({
-        pageNumber,
-        durationMs: pageDurationMs,
-        durationSec: pageDurationSec,
-      });
 
       pageNumber++;
     } catch (error) {
@@ -119,15 +81,14 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
 
-  const performanceRecord = new ScraperPerformance({
-    scraperName: DUBIZZLE_SELECTORS.SOURCE_NAME,
-    startTime: new Date(startTime),
-    endTime: new Date(endTime),
+  const sourcePerformance = await database.saveSourceOperationPerformance(
+    DUBIZZLE_SELECTORS.SOURCE_NAME,
+    new Date(startTime),
+    new Date(endTime),
     totalDurationMs,
-    pagePerformance,
-  });
+  );
 
-  await performanceRecord.save();
-  await savingLogs(performanceRecord.startTime, performanceRecord.totalDurationMs, DUBIZZLE_SELECTORS.SOURCE_NAME);
+  await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance);
+
   return { validPlates: validPlates, invalidPlates: invalidPlates };
 };
