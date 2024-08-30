@@ -7,6 +7,7 @@ import { performanceType } from '../types/performance.js';
 import { NumberOfMatchesForEachEmirate, Plate, emirates, validAndInvalidPlates } from '../types/plates.js';
 import { validatePlate } from '../validation/zod.js';
 import database from '../Database/db.js';
+import { LEVEL } from '../types/logs.js';
 export const scrapeEmiratesAuctionPlates = async (): Promise<validAndInvalidPlates> => {
   const validPlates: Plate[] = [];
   const invalidPlates: Plate[] = [];
@@ -65,9 +66,17 @@ export const scrapeEmiratesAuctionPlates = async (): Promise<validAndInvalidPlat
           validPlatesForEachEmirate.push(newPlate);
         }
       }
-      logger.info(`${validPlatesForEachEmirate.length.toString()} for each emirate: ${emirateName}`);
+      logger.log(
+        EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
+        LEVEL.INFO,
+        `${validPlatesForEachEmirate.length.toString()} for each emirate: ${emirateName}`,
+      );
     } catch (error) {
-      logger.error(`Error fetching plate data for ${emirateName}`, error);
+      logger.log(
+        EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
+        LEVEL.ERROR,
+        `Error fetching plate data for ${emirateName}, error : ${error}`,
+      );
     } finally {
       const pageEndTime = Date.now();
       const pageDurationMs = pageEndTime - pageStartTime;

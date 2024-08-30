@@ -8,7 +8,7 @@ const logs = sequalize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
-    startTime: {
+    timestamp: {
       type: DataTypes.DATE,
       allowNull: false,
     },

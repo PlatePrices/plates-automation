@@ -7,11 +7,12 @@ import { scrapeEmiratesAuctionPlates } from './scrapers/emiratesauction.js';
 import { scrapeNumbersAePlates } from './scrapers/numberAe.js';
 import { scrapePlatesAePlates } from './scrapers/plates.js';
 import { scrapeXplatesPlates } from './scrapers/xplate.js';
+import { LEVEL } from './types/logs.js';
 
 dotenv.config();
 
 const extractAllPlates = async (): Promise<void> => {
-  logger.info('starting scraping');
+  logger.log('main', LEVEL.INFO, 'starting scraping');
   const startTime = Date.now();
   await database.connectToDb();
   const plateGroups = await Promise.all([
@@ -35,7 +36,7 @@ const extractAllPlates = async (): Promise<void> => {
   const totalDurationMs = endTime - startTime;
 
   await database.saveMainOperationPerformance(new Date(startTime), new Date(endTime), totalDurationMs);
-  logger.info('finished scraping');
+  logger.log('main', LEVEL.INFO, 'finished scraping');
 };
 
 void extractAllPlates();

@@ -6,14 +6,15 @@ import OperationPerformance from './schemas/operationPerformance.schema.js';
 import PagePerformance from './schemas/pagePerformance.schema.js';
 import logs from './schemas/logs.schema.js';
 import { performanceType } from '../types/performance.js';
-
+import logger from '../logger/winston.js';
+import { LEVEL } from '../types/logs.js';
 class Database {
   public async connectToDb(): Promise<void> {
     try {
       await sequalize.authenticate();
-      console.log('MySQL connected');
+      logger.log('database', LEVEL.INFO, 'MySQL connected');
     } catch (error) {
-      console.error('MySQL connection error:', error);
+      logger.log('database', LEVEL.ERROR, `MySQL connection error: ${error}`);
     }
   }
 
@@ -59,10 +60,10 @@ class Database {
     await PagePerformance.bulkCreate(pagesRecords);
   }
 
-  public async saveLogs(source: string, startTime: Date, level: string, message: string) {
+  public async saveLogs(source: string, timestamp: Date, level: string, message: string) {
     await logs.create({
       source: source,
-      startTime: startTime,
+      timestamp: timestamp,
       level: level,
       message: message,
     });

@@ -5,9 +5,9 @@ import logger from '../logger/winston.js';
 import { DubizzleResponseData } from '../types/dubizzle.js';
 import { performanceType } from '../types/performance.js';
 import { Plate, validAndInvalidPlates } from '../types/plates.js';
-import { savingLogs } from '../utils/saveLogs.js';
 import { validatePlate } from '../validation/zod.js';
 import database from '../Database/db.js';
+import { LEVEL } from '../types/logs.js';
 export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => {
   let pageNumber = 0;
   const validPlates: Plate[] = [];
@@ -72,7 +72,11 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
 
       pageNumber++;
     } catch (error) {
-      logger.error(`Error fetching data for page ${pageNumber.toString()}:`, error);
+      logger.log(
+        DUBIZZLE_SELECTORS.SOURCE_NAME,
+        LEVEL.ERROR,
+        `Error fetching data for page ${pageNumber.toString()}: ${error}`,
+      );
 
       shouldContinue = false;
     }

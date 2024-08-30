@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import logger from '../logger/winston.js';
 import { invalidPlatesInfo, Plate } from '../types/plates.js';
+import { LEVEL } from '../types/logs.js';
 
 const BasePlateSchema = z.object({
   url: z.string().url(),
@@ -14,7 +15,7 @@ const BasePlateSchema = z.object({
 
 export const DubizzlePlateSchema = BasePlateSchema.extend({
   emirate: z.string(),
-  character: z.string().refine((val) => val === "Red" || val.length <= 2, {
+  character: z.string().refine((val) => val === 'Red' || val.length <= 2, {
     message: "Character must be 'Red' or have a maximum length of 2 characters",
   }),
 });
@@ -52,7 +53,7 @@ export const validatePlate = (plate: Plate, website: string): invalidPlatesInfo 
   const schema = schemaMap[website.toLowerCase()] as z.ZodTypeAny | undefined;
 
   if (!schema) {
-    logger.error(`No schema found for website: ${website}`);
+    logger.log('zod', LEVEL.ERROR, `No schema found for website: ${website}`);
     return { isValid: false, data: plate };
   }
 
@@ -61,9 +62,9 @@ export const validatePlate = (plate: Plate, website: string): invalidPlatesInfo 
   if (validationResult.success) {
     return { isValid: true, data: plate };
   } else {
-    logger.error(`Validation failed against ${website} schema:`);
+    logger.log('zod', LEVEL.ERROR, `Validation failed against ${website} schema:`);
     for (const errorMessage of validationResult.error.errors) {
-      logger.error(`error: ${errorMessage.message}`);
+      logger.log('zod', LEVEL.ERROR, `error: ${errorMessage.message}`);
     }
     return { isValid: false, data: plate };
   }

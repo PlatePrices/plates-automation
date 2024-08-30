@@ -6,7 +6,8 @@ import logger from '../logger/winston.js';
 import { performanceType } from '../types/performance.js';
 import { Plate, validAndInvalidPlates } from '../types/plates.js';
 import { validatePlate } from '../validation/zod.js';
-import database from '../Database/db.js'
+import database from '../Database/db.js';
+import { LEVEL } from '../types/logs.js';
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
@@ -59,7 +60,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
 
     return validPlates as Plate[];
   } catch (error) {
-    logger.error(`Error fetching page ${pageNumber.toString()}:`, error);
+    logger.log(NUMBERS_AE_SELECTORS.SOURCE_NAME, LEVEL.ERROR, `Error fetching page ${pageNumber.toString()}: ${error}`);
     return [];
   }
 };

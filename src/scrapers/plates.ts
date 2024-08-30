@@ -7,6 +7,7 @@ import { performanceType } from '../types/performance.js';
 import { Plate, validAndInvalidPlates } from '../types/plates.js';
 import { validatePlate } from '../validation/zod.js';
 import database from '../Database/db.js';
+import { LEVEL } from '../types/logs.js';
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 
@@ -15,8 +16,6 @@ const fetchPage = async (page: number): Promise<boolean> => {
   const headers = PLATES_AE_SELECTORS.HEADERS;
 
   try {
-    // const pageStartTime = Date.now();
-
     const response = await fetch(PLATES_AE_SELECTORS.BASE_URL, {
       method: 'POST',
       headers: headers,
@@ -63,7 +62,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
 
     return true;
   } catch (error) {
-    logger.error(`Error fetching page:`, error);
+    logger.log(PLATES_AE_SELECTORS.SOURCE_NAME, LEVEL.ERROR, `Error fetching page: ${error}`);
     return false;
   }
 };
