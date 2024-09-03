@@ -61,7 +61,6 @@ const fetchXplatePage = async (pageNumber: number) => {
   }
   const pageEndTime = Date.now();
   const pageDurationMs = pageEndTime - pageStartTime;
-  const pageDurationSec = pageDurationMs / 1000;
 
   pagePerformance.push({
     pageNumber: pageNumber,
@@ -71,8 +70,7 @@ const fetchXplatePage = async (pageNumber: number) => {
 
 export const scrapeXplatesPlates = async (): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
-  let page = 2180;
-  let isCached = false;
+  let page = 2170;
   while (shouldContinue) {
     await fetchXplatePage(page);
 

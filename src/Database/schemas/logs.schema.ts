@@ -4,8 +4,14 @@ import { sequalize } from '../../config/config.js';
 const logs = sequalize.define(
   'log',
   {
+    log_id: {
+      type: DataTypes.STRING(50),
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
+    },
     source: {
-      type: DataTypes.TEXT,
+      type: DataTypes.STRING(50),
       allowNull: false,
     },
     timestamp: {

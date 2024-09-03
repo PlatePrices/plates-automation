@@ -15,7 +15,7 @@ const Plate = sequalize.define(
       allowNull: false,
     },
     url: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.TEXT,
       allowNull: false,
     },
     source: {
@@ -49,7 +49,7 @@ const Plate = sequalize.define(
   },
   {
     tableName: 'plates',
-    timestamps: true,
+    timestamps: false,
   },
 );
 

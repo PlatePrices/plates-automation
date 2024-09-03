@@ -68,7 +68,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
 export const scrapeNumbersAePlates = async (): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
 
-  let pageNumber = 0;
+  let pageNumber = 500;
   let stop = false;
   const pagePerformance: performanceType[] = [];
 
@@ -77,7 +77,6 @@ export const scrapeNumbersAePlates = async (): Promise<validAndInvalidPlates> =>
    * there are some pages that has same plates nearly so my idea is just to scan each 10 pages and check if they exist or not
    * and so on so fourth
    */
-  let isCached = false;
   while (!stop) {
     const batchPlates: Plate[] = [];
 

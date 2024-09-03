@@ -49,6 +49,7 @@ OperationPerformance.init(
   {
     sequelize,
     tableName: 'operation_performance',
+    timestamps: false
   },
 );
 

@@ -4,6 +4,7 @@ import logger from '../logger/winston.js';
 import { invalidPlatesInfo, Plate } from '../types/plates.js';
 import { LEVEL } from '../types/logs.js';
 
+
 const BasePlateSchema = z.object({
   url: z.string().url(),
   number: z.number(),
@@ -40,12 +41,40 @@ export const EmiratesAuctionSchema = BasePlateSchema.extend({
   emirate: z.string(),
 });
 
+const Plates2020Schmea = BasePlateSchema.extend({
+  contact: z.string(),
+  emirate: z.string(),
+  duration: z.string(),
+});
+
+const AutoTradersSchema = BasePlateSchema.extend({
+  emirate: z.string(),
+  number: z.string(),
+});
+
+const AlshamilOnlineSchema = BasePlateSchema.extend({
+  emirate: z.string(),
+  number: z.string(),
+});
+
+const dubaiXplatesSchema = BasePlateSchema.extend({
+  image: z.string().optional()
+})
+
 const schemaMap: Record<string, z.ZodTypeAny> = {
   dubizzle: DubizzlePlateSchema,
   xplate: XplateSchema,
   platesae: PlatesAeSchema,
   numberae: NumberAeSchema,
   emiratesauction: EmiratesAuctionSchema,
+  '2020': Plates2020Schmea,
+  autotraders: AutoTradersSchema,
+  alshamilonline: AlshamilOnlineSchema,
+  DUBAI_XPLATES: dubaiXplatesSchema,
+};
+
+export const isvalidNumber = (plateNumber: string): boolean => {
+  return /^[0-9XYZxyz]+$/.test(plateNumber);
 };
 
 export const validatePlate = (plate: Plate, website: string): invalidPlatesInfo => {

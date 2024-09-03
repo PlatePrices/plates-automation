@@ -14,7 +14,7 @@ const InvalidPlate = sequalize.define(
       allowNull: false,
     },
     url: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.TEXT,
       allowNull: false,
     },
     source: {
@@ -30,7 +30,7 @@ const InvalidPlate = sequalize.define(
       allowNull: false,
     },
     image: {
-      type: DataTypes.BLOB,
+      type: DataTypes.TEXT,
       allowNull: false,
     },
     emirate: {
@@ -48,7 +48,7 @@ const InvalidPlate = sequalize.define(
   },
   {
     tableName: 'invalid_plates',
-    timestamps: true,
+    timestamps: false,
   },
 );
 

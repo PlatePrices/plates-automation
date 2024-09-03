@@ -17,7 +17,6 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
   const startTime = Date.now();
 
   let shouldContinue = true;
-  let isCached = false;
   while (shouldContinue) {
     const pageStartTime = Date.now();
 
@@ -68,7 +67,6 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
 
       const pageEndTime = Date.now();
       const pageDurationMs = pageEndTime - pageStartTime;
-      const pageDurationSec = pageDurationMs / 1000;
 
       pageNumber++;
     } catch (error) {
