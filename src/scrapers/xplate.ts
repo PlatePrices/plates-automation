@@ -70,7 +70,7 @@ const fetchXplatePage = async (pageNumber: number) => {
 
 export const scrapeXplatesPlates = async (): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
-  let page = 2170;
+  let page = 0;
   while (shouldContinue) {
     await fetchXplatePage(page);
 

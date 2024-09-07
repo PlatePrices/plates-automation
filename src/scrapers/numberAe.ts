@@ -68,7 +68,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
 export const scrapeNumbersAePlates = async (): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
 
-  let pageNumber = 500;
+  let pageNumber = 0;
   let stop = false;
   const pagePerformance: performanceType[] = [];
 
