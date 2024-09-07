@@ -25,10 +25,10 @@ const extractAllPlates = async (): Promise<void> => {
     scrapeNumbersAePlates(),
     scrapePlatesAePlates(),
     scrapeXplatesPlates(),
-    scrapealshamsionlinePlates(),
-    scrapeAutoTradersPlates(),
-    scrapePlates_2020(),
-    scrapeDubaiXplates()
+    // scrapealshamsionlinePlates(),
+    // scrapeAutoTradersPlates(),
+    // scrapePlates_2020(),
+    // scrapeDubaiXplates()
   ]);
 
   for (const plateGroup of plateGroups) {
