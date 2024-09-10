@@ -15,7 +15,6 @@ const fetchXplatePage = async (pageNumber: number) => {
   const pageStartTime = Date.now();
   const response = await fetch(
     `https://xplate.com/en/numbers/license-plates?page=${pageNumber.toString()}`,
-    XPLATES_SELECTORS.CONFIG,
   );
   const html = await response.text();
   const $ = cheerio.load(html);
@@ -48,13 +47,15 @@ const fetchXplatePage = async (pageNumber: number) => {
       url,
       emirate: emirate,
       character: character,
-      number: parseInt(number),
+      number: (number),
       source: XPLATES_SELECTORS.SOURCE_NAME,
     };
 
+    if(newPlate.price?.trim() === XPLATES_SELECTORS.SKIP_CONFIGURATION.CALL_FOR_PRICE  || newPlate.duration?.trim() === XPLATES_SELECTORS.SKIP_CONFIGURATION.FEATURED || newPlate.character?.trim() === XPLATES_SELECTORS.SKIP_CONFIGURATION.CHARACTER_HAS_NOC) continue;
     const plateValidation = validatePlate(newPlate, XPLATES_SELECTORS.SOURCE_NAME);
     if (!plateValidation.isValid) {
       invalidPlates.push(plateValidation.data);
+      console.log(`this is the page number: ${pageNumber} and invalid plate`, plateValidation.data)
     } else {
       validPlates.push(newPlate);
     }
