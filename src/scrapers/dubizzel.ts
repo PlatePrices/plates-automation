@@ -68,6 +68,11 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
       const pageEndTime = Date.now();
       const pageDurationMs = pageEndTime - pageStartTime;
 
+      pagePerformance.push({
+        pageNumber: pageNumber,
+        durationMs: pageDurationMs
+      })
+
       pageNumber++;
     } catch (error) {
       logger.log(

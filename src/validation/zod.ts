@@ -82,7 +82,7 @@ export const validatePlate = (plate: Plate, website: string): invalidPlatesInfo 
   const schema = schemaMap[website.toLowerCase()] as z.ZodTypeAny | undefined;
 
   if (!schema) {
-    logger.log('zod', LEVEL.ERROR, `No schema found for website: ${website}`);
+    logger.log('zod', LEVEL.DEBUG, `No schema found for website: ${website}`);
     return { isValid: false, data: plate };
   }
 
@@ -91,9 +91,9 @@ export const validatePlate = (plate: Plate, website: string): invalidPlatesInfo 
   if (validationResult.success) {
     return { isValid: true, data: plate };
   } else {
-    logger.log('zod', LEVEL.ERROR, `Validation failed against ${website} schema:`);
+    logger.log(website, LEVEL.ERROR, `Validation failed against ${website} schema:`);
     for (const errorMessage of validationResult.error.errors) {
-      logger.log('zod', LEVEL.ERROR, `error: ${errorMessage.message}`);
+      logger.log(website, LEVEL.ERROR, `error: ${errorMessage.message}`);
     }
     return { isValid: false, data: plate };
   }
