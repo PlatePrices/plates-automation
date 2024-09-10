@@ -8,5 +8,6 @@ export const DB_CONNECTION_URL = env.get('DB_URL_CONNECTION').required().asStrin
 export const BETTER_STACK_LOG_API_KEY = env.get('BETTER_STACK_LOG_API_KEY').required().asString();
 
 export const sequalize = new Sequelize(DB_CONNECTION_URL, {
-    dialect: 'mysql'
+    dialect: 'mysql',
+    logging: false
 })

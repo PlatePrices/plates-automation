@@ -24,7 +24,7 @@ const extractAllPlates = async (): Promise<void> => {
     scrapeEmiratesAuctionPlates(),
     scrapeNumbersAePlates(),
     scrapePlatesAePlates(),
-    scrapeXplatesPlates(),
+    scrapeXplatesPlates()
     // scrapealshamsionlinePlates(),
     // scrapeAutoTradersPlates(),
     // scrapePlates_2020(),
@@ -46,6 +46,7 @@ const extractAllPlates = async (): Promise<void> => {
   const totalDurationMs = endTime - startTime;
 
   await database.saveMainOperationPerformance(new Date(startTime), new Date(endTime), totalDurationMs);
+  logger.log('main', LEVEL.INFO, `time in ms: ${totalDurationMs}`)
   logger.log('main', LEVEL.INFO, 'finished scraping');
 };
 

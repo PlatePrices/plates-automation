@@ -24,6 +24,7 @@ export const DubizzlePlateSchema = BasePlateSchema.extend({
 export const XplateSchema = BasePlateSchema.extend({
   emirate: z.string(),
   duration: z.string(),
+  number: z.string()
 });
 
 export const PlatesAeSchema = BasePlateSchema.extend({
