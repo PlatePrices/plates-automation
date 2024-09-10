@@ -88,7 +88,7 @@ export const validatePlate = (plate: Plate, website: string): invalidPlatesInfo 
   }
 
   const validationResult = schema.safeParse(plate);
-
+try {
   if (validationResult.success) {
     return { isValid: true, data: plate };
   } else {
@@ -98,4 +98,8 @@ export const validatePlate = (plate: Plate, website: string): invalidPlatesInfo 
     }
     return { isValid: false, data: plate };
   }
+} catch {
+  return { isValid: false, data: plate };
+}
+
 };
