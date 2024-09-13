@@ -36,7 +36,6 @@
     },
     "scripts": {
         "start": "npm run start:dev",
-        "lint:check": "eslint --ext .ts src",
         "start:prod": "node dist/main.js",
         "start:dev": "tsx src/main.ts",
         "build": "tsc",

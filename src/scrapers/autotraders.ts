@@ -1,10 +1,10 @@
-import fetch from 'node-fetch';
-import * as cheerio from 'cheerio';
-import { Plate } from '../types/plates.js';
-import { isvalidNumber, validatePlate } from '../validation/zod.js';
-import { performanceType } from '../types/performance.js';
-import { AutoTraders_SELECTORS } from '../config/autoTraders.config.js';
-import database from '../Database/db.js';
+import fetch from "node-fetch";
+import * as cheerio from "cheerio";
+import { Plate } from "../types/plates.js";
+import { isvalidNumber, validatePlate } from "../validation/zod.js";
+import { performanceType } from "../types/performance.js";
+import { AutoTraders_SELECTORS } from "../config/autoTraders.config.js";
+import database from "../Database/db.js";
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
@@ -15,7 +15,7 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
   const pageStartTime = Date.now();
   try {
     const response = await fetch(AutoTraders_SELECTORS.URL(pageNumber), {
-      method: 'GET',
+      method: "GET",
       headers,
     });
     const html = await response.text();
@@ -27,14 +27,19 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
       return;
     }
 
-    const mappedPlates = plates.map((plate) => {
+    for (const plate of plates) {
       const plateElement = $(plate);
-      const link = plateElement.find(AutoTraders_SELECTORS.PLATE_LINK).attr('href') || '';
-      const price = plateElement.find(AutoTraders_SELECTORS.PRICE).text().trim() || '';
-      const character = link.split('/')[6];
-      const emirate = link.split('/')[5];
-      const plateNumber = plateElement.find(AutoTraders_SELECTORS.PLATE_NUMBER).text().trim();
-      const image = 'NA';
+      const link =
+        plateElement.find(AutoTraders_SELECTORS.PLATE_LINK).attr("href") || "";
+      const price =
+        plateElement.find(AutoTraders_SELECTORS.PRICE).text().trim() || "";
+      const character = link.split("/")[6];
+      const emirate = link.split("/")[5];
+      const plateNumber = plateElement
+        .find(AutoTraders_SELECTORS.PLATE_NUMBER)
+        .text()
+        .trim();
+      const image = "NA";
 
       const newPlate: Plate = {
         image,
@@ -46,17 +51,18 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
         source: AutoTraders_SELECTORS.SOURCE_NAME,
       };
 
-      const plateValidation = validatePlate(newPlate, AutoTraders_SELECTORS.SOURCE_NAME);
+      const plateValidation = validatePlate(
+        newPlate,
+        AutoTraders_SELECTORS.SOURCE_NAME
+      );
 
-      if (!plateValidation.isValid && isvalidNumber(plateNumber)) {
-        if (!plateValidation.isValid) {
-          invalidPlates.push(plateValidation.data);
-        } else {
-          validPlates.push(newPlate);
-        }
+      if (plateValidation.isValid) {
+        validPlates.push(newPlate);
+      } else {
+        invalidPlates.push(plateValidation.data);
+        console.log("invalid plate : ", plateValidation.data);
       }
-    });
-
+    }
     const pageEndTime = Date.now();
     const totalPageTime = pageEndTime - pageStartTime;
     pagePerformance.push({
@@ -77,10 +83,15 @@ export const scrapeAutoTradersPlates = async () => {
 
   while (!finished) {
     const pageStartTime = Date.now();
-    const plates = await fetchPage(pageNumber);
+    await fetchPage(pageNumber);
     const pageEndTime = Date.now();
     const pageDuration = pageEndTime - pageStartTime;
 
+    pagePerformance.push({
+      pageNumber: pageNumber,
+      durationMs: pageDuration,
+    });
+    console.log("scrape page : ", pageNumber);
     pageNumber++;
   }
 
@@ -90,9 +101,12 @@ export const scrapeAutoTradersPlates = async () => {
     AutoTraders_SELECTORS.SOURCE_NAME,
     new Date(startTime),
     new Date(endTime),
-    totalTimeInMs,
+    totalTimeInMs
   );
 
-  await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance)
+  await database.savePagePerformance(
+    sourcePerformance.operation_id,
+    pagePerformance
+  );
   return { validPlates, invalidPlates };
 };

@@ -20,15 +20,15 @@ const extractAllPlates = async (): Promise<void> => {
   const startTime = Date.now();
   await database.connectToDb();
   const plateGroups = await Promise.all([
-    scrapeDubizzlePlates(),
-    scrapeEmiratesAuctionPlates(),
-    scrapeNumbersAePlates(),
-    scrapePlatesAePlates(),
-    scrapeXplatesPlates()
+    // scrapeDubizzlePlates(),
+    // scrapeEmiratesAuctionPlates(),
+    // scrapeNumbersAePlates(),
+    // scrapePlatesAePlates(),
+    // scrapeXplatesPlates()
     // scrapealshamsionlinePlates(),
     // scrapeAutoTradersPlates(),
     // scrapePlates_2020(),
-    // scrapeDubaiXplates()
+    scrapeDubaiXplates()
   ]);
 
   for (const plateGroup of plateGroups) {

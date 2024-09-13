@@ -1,5 +1,5 @@
 export const DUBAI_XPLATES_SELECTORS = {
-  SOURCE_NAME: 'DUBAI_XPLATES',
+  SOURCE_NAME: 'dubai_xplates',
   URL: 'https://dubaixplates.com/en/loadmore_plate.php',
   SHARABLE_LINK: 'https://dubaixplates.com/en/plates',
   GET_HEADERS: (): Headers => {

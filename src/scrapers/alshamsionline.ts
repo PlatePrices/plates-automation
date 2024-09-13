@@ -2,17 +2,18 @@ import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
 import { Plate } from '../types/plates.js';
 import { isvalidNumber, validatePlate } from '../validation/zod.js';
+import database from '../Database/db.js';
 import { performanceType } from '../types/performance.js';
 import { AL_SHAMIL_SELECTORS } from '../config/alshamilonline.config.js';
-import database from '../Database/db.js';
+import { savingLogs } from '../utils/saveLogs.js';
+
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
-const pagePerformance: performanceType[] = [];
 let finished = false;
 
-const fetchPage = async (pageNumber: number): Promise<void> => {
+const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
   const headers = AL_SHAMIL_SELECTORS.HEADERS;
-  const pageStartTime = Date.now();
+
   try {
     const response = await fetch(AL_SHAMIL_SELECTORS.URL(pageNumber), {
       method: 'GET',
@@ -24,7 +25,7 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
     if (plates.length < 99) {
       finished = true;
     }
-    const mappedPlates = plates.map((plate) => {
+    for (const plate of plates) {
       const plateElement = $(plate);
       const linkElement = plateElement.find(AL_SHAMIL_SELECTORS.PLATE_LINK);
       const isSold = linkElement.find('button').text().trim() || '';
@@ -47,20 +48,6 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
         else if (info.length === 4) emirate = info[1].split('/')[1];
         else {
           emirate = 'NA';
-          console.log(
-            'Price:',
-            price,
-            'Character:',
-            character,
-            'Number:',
-            number,
-            'Emirate:',
-            emirate,
-            'Link:',
-            link,
-            'Duration:',
-            duration,
-          );
         }
       } else {
         if (info.length === 4) {
@@ -77,7 +64,7 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
       const image = plateElement.find(AL_SHAMIL_SELECTORS.IMAGE).attr('data-src') || 'NA';
 
       const newPlate: Plate = {
-        image: 'image',
+        image: image,
         price,
         url: link,
         character,
@@ -89,22 +76,14 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
       const plateValidation = validatePlate(newPlate, AL_SHAMIL_SELECTORS.SOURCE_NAME);
 
       if (plateValidation.isValid && isvalidNumber(number)) {
-        validPlates.push(newPlate);
+        validPlates.push(plateValidation.data);
       } else {
-        invalidPlates.push(plateValidation.data);
+        invalidPlates.push(newPlate);
       }
-    });
+    }
 
-    const pageEndTime = Date.now();
-    const pageDurationInMs = pageEndTime - pageStartTime;
-    pagePerformance.push({
-      pageNumber,
-      durationMs: pageDurationInMs,
-    });
-    return;
   } catch (error) {
-    console.error(`Error fetching page ${pageNumber}`, error);
-    return;
+
   }
 };
 
@@ -114,23 +93,27 @@ export const scrapealshamsionlinePlates = async () => {
   const pagePerformance: performanceType[] = [];
 
   while (!finished) {
+
     const pageStartTime = Date.now();
     await fetchPage(pageNumber);
     const pageEndTime = Date.now();
     const pageDuration = pageEndTime - pageStartTime;
-
+    pagePerformance.push({
+      pageNumber: pageNumber,
+      durationMs: pageDuration
+    })
     pageNumber++;
   }
 
-  const endtime = Date.now();
-  const totalDurationMs = endtime - startTime;
-
+  const endTime = Date.now();
+  const totalDurationMs = endTime - startTime;
   const sourcePerformance = await database.saveSourceOperationPerformance(
-    AL_SHAMIL_SELECTORS.SOURCE_NAME,
-    new Date(startTime),
-    new Date(endtime),
-    totalDurationMs,
+      AL_SHAMIL_SELECTORS.SOURCE_NAME,
+      new Date(startTime),
+      new Date(endTime),
+      totalDurationMs
   );
+
   await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance);
 
   return { validPlates, invalidPlates };
