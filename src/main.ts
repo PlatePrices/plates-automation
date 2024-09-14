@@ -12,22 +12,24 @@ import { scrapealshamsionlinePlates } from './scrapers/alshamsionline.js';
 import { scrapeAutoTradersPlates } from './scrapers/autotraders.js';
 import { scrapePlates_2020 } from './scrapers/plates_2020.js';
 import { scrapeDubaiXplates } from './scrapers/dubaixplates.js';
-
+import redis from './cache/redis.js';
 dotenv.config();
 
 const extractAllPlates = async (): Promise<void> => {
   logger.log('main', LEVEL.INFO, 'starting scraping');
   const startTime = Date.now();
   await database.connectToDb();
+  await redis.connectToRedis();
+
   const plateGroups = await Promise.all([
-    // scrapeDubizzlePlates(),
-    // scrapeEmiratesAuctionPlates(),
-    // scrapeNumbersAePlates(),
-    // scrapePlatesAePlates(),
-    // scrapeXplatesPlates()
-    // scrapealshamsionlinePlates(),
-    // scrapeAutoTradersPlates(),
-    // scrapePlates_2020(),
+    scrapeDubizzlePlates(),
+    scrapeEmiratesAuctionPlates(),
+    scrapeNumbersAePlates(),
+    scrapePlatesAePlates(),
+    scrapeXplatesPlates(),
+    scrapealshamsionlinePlates(),
+    scrapeAutoTradersPlates(),
+    scrapePlates_2020(),
     scrapeDubaiXplates()
   ]);
 
