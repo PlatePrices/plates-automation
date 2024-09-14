@@ -41,3 +41,16 @@ export type cachePlates = {
   hasMatch: boolean;
   data: Plate[] | undefined;
 };
+export type sources =
+  | "_2020"
+  | "alshamilonline"
+  | "AutoTraders"
+  | "dubai_xplates"
+  | "Dubizzle"
+  | "emiratesauction"
+  | "numberae"
+  | "platesae"
+  | "xplate";
+export type ScraperFunction =
+  | ((startPage: number, endPage: number, expectedTime: number) => Promise<any>)
+  | (() => Promise<any>);

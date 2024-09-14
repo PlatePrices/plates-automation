@@ -1,14 +1,17 @@
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
-import { CONFIG, DUBIZZLE_SELECTORS } from '../config/dubizzle.config.js';
-import logger from '../logger/winston.js';
-import { DubizzleResponseData } from '../types/dubizzle.js';
-import { performanceType } from '../types/performance.js';
-import { Plate, validAndInvalidPlates } from '../types/plates.js';
-import { validatePlate } from '../validation/zod.js';
-import database from '../Database/db.js';
-import { LEVEL } from '../types/logs.js';
-export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => {
+import { CONFIG, DUBIZZLE_SELECTORS } from "../config/dubizzle.config.js";
+import logger from "../logger/winston.js";
+import { DubizzleResponseData } from "../types/dubizzle.js";
+import { performanceType } from "../types/performance.js";
+import { Plate, validAndInvalidPlates } from "../types/plates.js";
+import { validatePlate } from "../validation/zod.js";
+import database from "../Database/db.js";
+import { LEVEL } from "../types/logs.js";
+export const scrapeDubizzlePlates = async (
+  startPage: number,
+  endPage: number,
+): Promise<validAndInvalidPlates> => {
   let pageNumber = 0;
   const validPlates: Plate[] = [];
   const invalidPlates: Plate[] = [];
@@ -17,7 +20,7 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
   const startTime = Date.now();
 
   let shouldContinue = true;
-  while (shouldContinue) {
+  while (shouldContinue || startPage === endPage  + 1) {
     const pageStartTime = Date.now();
 
     try {
@@ -27,7 +30,7 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
       }
 
       const responseData = (await response.json()) as DubizzleResponseData;
-      const carPlates = responseData['results'][0]['hits'];
+      const carPlates = responseData["results"][0]["hits"];
 
       if (carPlates.length === 0) {
         shouldContinue = false;
@@ -35,15 +38,17 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
       }
 
       for (const plate of carPlates) {
-        const price = plate['price'];
-        const number = Number(plate['details']['Plate number']['ar']['value']);
-        const url = plate['absolute_url']['ar'];
-        const image = plate['photos']['main'];
-        const emirate = plate['site']['en'];
-        let character = plate['details']['Plate code'] ? plate['details']['Plate code']['ar']['value'] : '';
+        const price = plate["price"];
+        const number = Number(plate["details"]["Plate number"]["ar"]["value"]);
+        const url = plate["absolute_url"]["ar"];
+        const image = plate["photos"]["main"];
+        const emirate = plate["site"]["en"];
+        let character = plate["details"]["Plate code"]
+          ? plate["details"]["Plate code"]["ar"]["value"]
+          : "";
 
         if (character.length > 3) {
-          character = '';
+          character = "";
         }
 
         const newPlate: Plate = {
@@ -56,9 +61,12 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
           source: DUBIZZLE_SELECTORS.SOURCE_NAME,
         };
 
-        const plateValidation = validatePlate(newPlate, DUBIZZLE_SELECTORS.SOURCE_NAME);
+        const plateValidation = validatePlate(
+          newPlate,
+          DUBIZZLE_SELECTORS.SOURCE_NAME
+        );
         if (!plateValidation.isValid) {
-          if (character === 'Red') character = '';
+          if (character === "Red") character = "";
           invalidPlates.push(plateValidation.data);
         } else {
           validPlates.push(plateValidation.data);
@@ -70,15 +78,15 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
 
       pagePerformance.push({
         pageNumber: pageNumber,
-        durationMs: pageDurationMs
-      })
+        durationMs: pageDurationMs,
+      });
 
       pageNumber++;
     } catch (error) {
       logger.log(
         DUBIZZLE_SELECTORS.SOURCE_NAME,
         LEVEL.ERROR,
-        `Error fetching data for page ${pageNumber.toString()}: ${error}`,
+        `Error fetching data for page ${pageNumber.toString()}: ${error}`
       );
 
       shouldContinue = false;
@@ -92,10 +100,13 @@ export const scrapeDubizzlePlates = async (): Promise<validAndInvalidPlates> => 
     DUBIZZLE_SELECTORS.SOURCE_NAME,
     new Date(startTime),
     new Date(endTime),
-    totalDurationMs,
+    totalDurationMs
   );
 
-  await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance);
+  await database.savePagePerformance(
+    sourcePerformance.operation_id,
+    pagePerformance
+  );
 
   return { validPlates: validPlates, invalidPlates: invalidPlates };
 };

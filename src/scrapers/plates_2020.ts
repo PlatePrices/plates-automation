@@ -5,7 +5,10 @@ import { PLATES_2020_SELECTORS } from "../config/2020.config.js";
 import { validatePlate } from "../validation/zod.js";
 import database from "../Database/db.js";
 import { plates_2020 } from "../types/plates_2020.js";
-export const scrapePlates_2020 = async (): Promise<validAndInvalidPlates> => {
+export const scrapePlates_2020 = async (
+  startPage: number,
+  endPage: number,
+): Promise<validAndInvalidPlates> => {
   let pageNumber = 1;
   const validPlates: Plate[] = [];
   const invalidPlates: Plate[] = [];
@@ -15,7 +18,7 @@ export const scrapePlates_2020 = async (): Promise<validAndInvalidPlates> => {
 
   let shouldContinue = true;
 
-  while (shouldContinue) {
+  while (shouldContinue || startPage === endPage + 1) {
     const pageStartTime = Date.now();
 
     const response = await fetch(
@@ -23,7 +26,6 @@ export const scrapePlates_2020 = async (): Promise<validAndInvalidPlates> => {
       PLATES_2020_SELECTORS.GET_REQUEST_OPTIONS() as any
     );
 
-    console.log(`number of valid plates : ${validPlates.length}`);
     const responseData = (await response.json()) as plates_2020;
     const carPlates = responseData["data"]["items"];
 

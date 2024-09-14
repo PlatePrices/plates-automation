@@ -1,13 +1,13 @@
-import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
+import * as cheerio from "cheerio";
+import fetch from "node-fetch";
 
-import { PLATES_AE_SELECTORS } from '../config/plates.config.js';
-import logger from '../logger/winston.js';
-import { performanceType } from '../types/performance.js';
-import { Plate, validAndInvalidPlates } from '../types/plates.js';
-import { validatePlate } from '../validation/zod.js';
-import database from '../Database/db.js';
-import { LEVEL } from '../types/logs.js';
+import { PLATES_AE_SELECTORS } from "../config/plates.config.js";
+import logger from "../logger/winston.js";
+import { performanceType } from "../types/performance.js";
+import { Plate, validAndInvalidPlates } from "../types/plates.js";
+import { validatePlate } from "../validation/zod.js";
+import database from "../Database/db.js";
+import { LEVEL } from "../types/logs.js";
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 
@@ -17,7 +17,7 @@ const fetchPage = async (page: number): Promise<boolean> => {
 
   try {
     const response = await fetch(PLATES_AE_SELECTORS.BASE_URL, {
-      method: 'POST',
+      method: "POST",
       headers: headers,
       body: data,
     });
@@ -36,12 +36,15 @@ const fetchPage = async (page: number): Promise<boolean> => {
 
     plates.forEach((plate) => {
       const plateElement = $(plate);
-      const price = plateElement.find(PLATES_AE_SELECTORS.PRICE).text().trim() || '';
-      const url = plateElement.find('a').attr('href') || '';
-      const contact = plateElement.find('a').attr('href')?.slice(4, 15) || '';
-      const number = plateElement.find(PLATES_AE_SELECTORS.PLATE_NUMBER).text().trim() || '';
-      const character = plateElement.find(PLATES_AE_SELECTORS.CHARACTER).text().trim() || '';
-      const img = plateElement.find('img').attr('src') || '';
+      const price =
+        plateElement.find(PLATES_AE_SELECTORS.PRICE).text().trim() || "";
+      const url = plateElement.find("a").attr("href") || "";
+      const contact = plateElement.find("a").attr("href")?.slice(4, 15) || "";
+      const number =
+        plateElement.find(PLATES_AE_SELECTORS.PLATE_NUMBER).text().trim() || "";
+      const character =
+        plateElement.find(PLATES_AE_SELECTORS.CHARACTER).text().trim() || "";
+      const img = plateElement.find("img").attr("src") || "";
 
       const newPlate: Plate = {
         url,
@@ -52,7 +55,10 @@ const fetchPage = async (page: number): Promise<boolean> => {
         image: img,
         source: PLATES_AE_SELECTORS.SOURCE_NAME,
       };
-      const plateValidation = validatePlate(newPlate, PLATES_AE_SELECTORS.SOURCE_NAME);
+      const plateValidation = validatePlate(
+        newPlate,
+        PLATES_AE_SELECTORS.SOURCE_NAME
+      );
       if (!plateValidation.isValid) {
         invalidPlates.push(plateValidation.data);
       } else {
@@ -62,12 +68,19 @@ const fetchPage = async (page: number): Promise<boolean> => {
 
     return true;
   } catch (error) {
-    logger.log(PLATES_AE_SELECTORS.SOURCE_NAME, LEVEL.ERROR, `Error fetching page: ${error}`);
+    logger.log(
+      PLATES_AE_SELECTORS.SOURCE_NAME,
+      LEVEL.ERROR,
+      `Error fetching page: ${error}`
+    );
     return false;
   }
 };
 
-export const scrapePlatesAePlates = async (): Promise<validAndInvalidPlates> => {
+export const scrapePlatesAePlates = async (
+  startPage: number,
+  endPage: number,
+): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
 
   let page = 0;
@@ -75,7 +88,7 @@ export const scrapePlatesAePlates = async (): Promise<validAndInvalidPlates> => 
   let isCached = false;
   const pagePerformance: performanceType[] = [];
 
-  while (hasMorePages) {
+  while (hasMorePages || startPage === endPage + 1) {
     const batchStartTime = Date.now();
 
     hasMorePages = await fetchPage(page);
@@ -99,10 +112,13 @@ export const scrapePlatesAePlates = async (): Promise<validAndInvalidPlates> => 
     PLATES_AE_SELECTORS.SOURCE_NAME,
     new Date(startTime),
     new Date(endTime),
-    totalDurationMs,
+    totalDurationMs
   );
 
-  await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance);
+  await database.savePagePerformance(
+    sourcePerformance.operation_id,
+    pagePerformance
+  );
 
   return { validPlates, invalidPlates };
 };

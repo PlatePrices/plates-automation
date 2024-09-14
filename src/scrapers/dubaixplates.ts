@@ -73,11 +73,14 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
     durationMs: pageDurationMs,
   });
 };
-export const scrapeDubaiXplates = async (): Promise<validAndInvalidPlates> => {
+export const scrapeDubaiXplates = async (
+  startPage: number,
+  endPage: number,
+): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
   let pageNumber = 0;
 
-  while (shouldContinue) {
+  while (shouldContinue || startPage === endPage + 1) {
     await fetchDubaiXplatesPage(pageNumber);
     pageNumber++;
   }

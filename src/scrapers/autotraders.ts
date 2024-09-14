@@ -76,12 +76,15 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
   }
 };
 
-export const scrapeAutoTradersPlates = async () => {
+export const scrapeAutoTradersPlates = async (
+  startPage: number,
+  endPage: number,
+) => {
   const startTime = Date.now();
   let pageNumber = 1;
   const pagePerformance: performanceType[] = [];
 
-  while (!finished) {
+  while (!finished || startPage === endPage + 1) {
     const pageStartTime = Date.now();
     await fetchPage(pageNumber);
     const pageEndTime = Date.now();
