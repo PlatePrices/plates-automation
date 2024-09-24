@@ -48,7 +48,6 @@ export type sources =
   | "dubai_xplates"
   | "Dubizzle"
   | "emiratesauction"
-  | "numberae"
   | "platesae"
   | "xplate";
 export type ScraperFunction =

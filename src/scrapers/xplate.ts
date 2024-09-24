@@ -1,11 +1,11 @@
 import * as cheerio from "cheerio";
 import fetch from "node-fetch";
-
 import XPLATES_SELECTORS from "../config/xplates.config.js";
 import { performanceType } from "../types/performance.js";
 import { Plate, validAndInvalidPlates } from "../types/plates.js";
 import { validatePlate } from "../validation/zod.js";
 import database from "../Database/db.js";
+
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
@@ -63,6 +63,7 @@ const fetchXplatePage = async (pageNumber: number) => {
         XPLATES_SELECTORS.SKIP_CONFIGURATION.CHARACTER_HAS_NOC
     )
       continue;
+
     const plateValidation = validatePlate(
       newPlate,
       XPLATES_SELECTORS.SOURCE_NAME
@@ -70,7 +71,7 @@ const fetchXplatePage = async (pageNumber: number) => {
     if (!plateValidation.isValid) {
       invalidPlates.push(plateValidation.data);
       console.log(
-        `this is the page number: ${pageNumber} and invalid plate`,
+        `Page: ${pageNumber}, Invalid plate:`,
         plateValidation.data
       );
     } else {
@@ -88,15 +89,21 @@ const fetchXplatePage = async (pageNumber: number) => {
 
 export const scrapeXplatesPlates = async (
   startPage: number,
-  endPage: number
+  endPage: number,
+  concurrentRequests: number = (endPage - startPage + 1 ) / 3
 ): Promise<validAndInvalidPlates> => {
+  console.log('Starting scraping from Xplate...');
   const startTime = Date.now();
-  let page = 0;
-  while (shouldContinue || startPage === endPage + 1) {
-    await fetchXplatePage(page);
 
-    page++;
+  const pageNumbers = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+
+  while (pageNumbers.length > 0 && shouldContinue) {
+    const pagesToScrape = pageNumbers.splice(0, concurrentRequests);
+    console.log(`Scraping pages: ${pagesToScrape}`);
+
+    await Promise.all(pagesToScrape.map((page) => fetchXplatePage(page)));
   }
+
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
   const sourcePerformance = await database.saveSourceOperationPerformance(
@@ -110,5 +117,6 @@ export const scrapeXplatesPlates = async (
     sourcePerformance.operation_id,
     pagePerformance
   );
+
   return { invalidPlates, validPlates };
 };

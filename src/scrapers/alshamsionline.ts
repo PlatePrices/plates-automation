@@ -8,9 +8,12 @@ import { AL_SHAMIL_SELECTORS } from "../config/alshamilonline.config.js";
 
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
+const pagePerformance: performanceType[] = [];
+
 let finished = false;
 
 const fetchPage = async (pageNumber: number): Promise<void> => {
+  const pageStartTime = Date.now();
   const headers = AL_SHAMIL_SELECTORS.HEADERS;
 
   try {
@@ -21,38 +24,37 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
     const html = await response.text();
     const $ = cheerio.load(html);
     const plates = Array.from($(AL_SHAMIL_SELECTORS.ALL_PLATES).children());
+
+    // Stop if no more than 99 plates are found (implies end of data)
     if (plates.length < 99) {
       finished = true;
     }
+
     for (const plate of plates) {
       const plateElement = $(plate);
       const linkElement = plateElement.find(AL_SHAMIL_SELECTORS.PLATE_LINK);
       const isSold = linkElement.find("button").text().trim() || "";
-      if (isSold === "Sold" || isSold === "Booked") return;
+      if (isSold === "Sold" || isSold === "Booked") continue;
+
       const link = linkElement.attr("href") || "";
       const info = link.split("-");
-      if (info[1].split("/")[1] === "bike") return;
+      if (info[1].split("/")[1] === "bike") continue;
+
       let price =
         plateElement.find(AL_SHAMIL_SELECTORS.PRICE).text().trim() || "";
-      if (price === "" || price === "AED" || price === "0" || price === "AED 0")
-        return;
-      if (price != "Call for price")
-        price = price.split(" ")[1].replace(/[^0-9]/g, "");
+      if (!price || price === "AED 0") continue;
+
+      price = price !== "Call for price" ? price.split(" ")[1].replace(/[^0-9]/g, "") : price;
+      
       let character = info[info.length - 2];
       const number = info[info.length - 1].split("_")[0];
-      const duration =
-        plateElement.find($(AL_SHAMIL_SELECTORS.DATE)).text().trim() || "";
+      const duration = plateElement.find($(AL_SHAMIL_SELECTORS.DATE)).text().trim() || "";
 
-      let emirate = "";
+      let emirate = "NA";
       if (character.length < 3) {
         if (info.length === 5) emirate = info[2];
         else if (info.length === 6) emirate = info[2] + " " + info[3];
-        else if (info.length === 7)
-          emirate = info[2] + " " + info[3] + " " + info[4];
-        else if (info.length === 4) emirate = info[1].split("/")[1];
-        else {
-          emirate = "NA";
-        }
+        else if (info.length === 7) emirate = info[2] + " " + info[3] + " " + info[4];
       } else {
         if (info.length === 4) {
           emirate = info[2];
@@ -65,23 +67,21 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
           character = "?";
         }
       }
-      const image =
-        plateElement.find(AL_SHAMIL_SELECTORS.IMAGE).attr("data-src") || "NA";
+
+      const image = plateElement.find(AL_SHAMIL_SELECTORS.IMAGE).attr("data-src") || "NA";
 
       const newPlate: Plate = {
-        image: image,
+        image,
         price,
         url: link,
         character,
         number,
-        emirate: emirate,
+        emirate,
         source: AL_SHAMIL_SELECTORS.SOURCE_NAME,
         duration,
       };
-      const plateValidation = validatePlate(
-        newPlate,
-        AL_SHAMIL_SELECTORS.SOURCE_NAME
-      );
+
+      const plateValidation = validatePlate(newPlate, AL_SHAMIL_SELECTORS.SOURCE_NAME);
 
       if (plateValidation.isValid && isvalidNumber(number)) {
         validPlates.push(plateValidation.data);
@@ -89,27 +89,38 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
         invalidPlates.push(newPlate);
       }
     }
-  } catch (error) {}
+  } catch (error) {
+    console.error(`Error fetching page ${pageNumber}:`, error);
+  }
+
+  const pageEndTime = Date.now();
+  const pageDuration = pageEndTime - pageStartTime;
+  pagePerformance.push({
+    pageNumber,
+    durationMs: pageDuration,
+  });
 };
 
 export const scrapealshamsionlinePlates = async (
   startPage: number,
   endPage: number,
+  concurrentRequests: number = (endPage - startPage + 1) / 3
 ) => {
   const startTime = Date.now();
   let pageNumber = startPage;
-  const pagePerformance: performanceType[] = [];
+  const pageNumbers = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
 
-  while (!finished || startPage === endPage + 1) {
-    const pageStartTime = Date.now();
-    await fetchPage(pageNumber);
-    const pageEndTime = Date.now();
-    const pageDuration = pageEndTime - pageStartTime;
-    pagePerformance.push({
-      pageNumber: pageNumber,
-      durationMs: pageDuration,
-    });
-    pageNumber++;
+  while (!finished && pageNumber <= endPage) {
+    // Take the next batch of pages to scrape concurrently
+    const pagesToScrape = pageNumbers.slice(pageNumber - startPage, pageNumber - startPage + concurrentRequests);
+
+    // Fetch the pages concurrently
+    await Promise.all(pagesToScrape.map((page) => fetchPage(page)));
+
+    console.log('Scraped pages:', pagesToScrape);
+    
+    // Update pageNumber after the batch is complete
+    pageNumber += concurrentRequests;
   }
 
   const endTime = Date.now();

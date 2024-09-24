@@ -8,9 +8,11 @@ import { Plate, validAndInvalidPlates } from "../types/plates.js";
 import { validatePlate } from "../validation/zod.js";
 import database from "../Database/db.js";
 import { LEVEL } from "../types/logs.js";
+
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 
+// Fetch a single page of data
 const fetchPage = async (page: number): Promise<boolean> => {
   const data = `page=${page.toString()}`;
   const headers = PLATES_AE_SELECTORS.HEADERS;
@@ -36,14 +38,11 @@ const fetchPage = async (page: number): Promise<boolean> => {
 
     plates.forEach((plate) => {
       const plateElement = $(plate);
-      const price =
-        plateElement.find(PLATES_AE_SELECTORS.PRICE).text().trim() || "";
+      const price = plateElement.find(PLATES_AE_SELECTORS.PRICE).text().trim() || "";
       const url = plateElement.find("a").attr("href") || "";
       const contact = plateElement.find("a").attr("href")?.slice(4, 15) || "";
-      const number =
-        plateElement.find(PLATES_AE_SELECTORS.PLATE_NUMBER).text().trim() || "";
-      const character =
-        plateElement.find(PLATES_AE_SELECTORS.CHARACTER).text().trim() || "";
+      const number = plateElement.find(PLATES_AE_SELECTORS.PLATE_NUMBER).text().trim() || "";
+      const character = plateElement.find(PLATES_AE_SELECTORS.CHARACTER).text().trim() || "";
       const img = plateElement.find("img").attr("src") || "";
 
       const newPlate: Plate = {
@@ -55,10 +54,8 @@ const fetchPage = async (page: number): Promise<boolean> => {
         image: img,
         source: PLATES_AE_SELECTORS.SOURCE_NAME,
       };
-      const plateValidation = validatePlate(
-        newPlate,
-        PLATES_AE_SELECTORS.SOURCE_NAME
-      );
+
+      const plateValidation = validatePlate(newPlate, PLATES_AE_SELECTORS.SOURCE_NAME);
       if (!plateValidation.isValid) {
         invalidPlates.push(plateValidation.data);
       } else {
@@ -77,33 +74,48 @@ const fetchPage = async (page: number): Promise<boolean> => {
   }
 };
 
+// Function to scrape plates with concurrency
 export const scrapePlatesAePlates = async (
   startPage: number,
   endPage: number,
+  concurrencyLimit: number = (endPage - startPage + 1) / 3
 ): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
-
-  let page = 0;
-  let hasMorePages = true;
-  let isCached = false;
   const pagePerformance: performanceType[] = [];
 
-  while (hasMorePages || startPage === endPage + 1) {
-    const batchStartTime = Date.now();
+  let currentPage = startPage;
+  let pagesToScrape = Array.from({ length: endPage - startPage + 1 }, (_, i) => i + startPage);
 
-    hasMorePages = await fetchPage(page);
+  // Function to run page fetchers in batches with a concurrency limit
+  const fetchPagesInBatches = async () => {
+    while (pagesToScrape.length > 0) {
+      // Fetch the next batch of pages up to the concurrency limit
+      const batch = pagesToScrape.splice(0, concurrencyLimit);
+      const batchStartTime = Date.now();
 
-    const batchEndTime = Date.now();
-    const batchDurationMs = batchEndTime - batchStartTime;
-    const batchDurationSec = batchDurationMs / 1000;
+      // Run all page fetchers concurrently
+      const results = await Promise.all(batch.map((page) => fetchPage(page)));
 
-    pagePerformance.push({
-      pageNumber: page,
-      durationMs: batchDurationMs,
-    });
+      const batchEndTime = Date.now();
+      const batchDurationMs = batchEndTime - batchStartTime;
 
-    page++;
-  }
+      // Record performance for each page in the batch
+      batch.forEach((page, index) => {
+        pagePerformance.push({
+          pageNumber: page,
+          durationMs: batchDurationMs,
+        });
+
+        // If a page has no more plates, stop further scraping
+        if (!results[index]) {
+          pagesToScrape = []; // Clear remaining pages to stop the loop
+        }
+      });
+    }
+  };
+
+  // Start fetching pages in batches with concurrency
+  await fetchPagesInBatches();
 
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
@@ -115,10 +127,7 @@ export const scrapePlatesAePlates = async (
     totalDurationMs
   );
 
-  await database.savePagePerformance(
-    sourcePerformance.operation_id,
-    pagePerformance
-  );
+  await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance);
 
   return { validPlates, invalidPlates };
 };

@@ -22,7 +22,6 @@ const scraperFunctions: Record<sources, ScraperFunction> = {
   dubai_xplates: scrapeDubaiXplates,
   Dubizzle: scrapeDubizzlePlates,
   emiratesauction: scrapeEmiratesAuctionPlates,
-  numberae: scrapeNumbersAePlates,
   platesae: scrapePlatesAePlates,
   xplate: scrapeXplatesPlates,
 };
@@ -100,4 +99,4 @@ async function main(
   logger.log("main", LEVEL.INFO, "Finished scraping process");
 }
 
-void main(["_2020", "emiratesauction"], 0, 10);
+void main(["_2020", "alshamilonline", "AutoTraders", "Dubizzle", "xplate", "dubai_xplates", "emiratesauction", "platesae"], 0, 5000);
