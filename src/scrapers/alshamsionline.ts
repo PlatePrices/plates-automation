@@ -90,6 +90,7 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
       }
     }
   } catch (error) {
+    finished = true
     console.error(`Error fetching page ${pageNumber}:`, error);
   }
 
