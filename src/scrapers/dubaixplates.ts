@@ -5,12 +5,16 @@ import database from "../Database/db.js";
 import { DUBAI_XPLATES_SELECTORS } from "../config/dubaixplates.config.js";
 import { performanceType } from "../types/performance.js";
 import { validatePlate } from "../validation/zod.js";
-
-let shouldContinue = true;
+import logger from "../logger/winston.js"; // Assuming you want to use logger for error handling
+import { LEVEL } from "../types/logs.js";
 
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
+
+// Concurrency configuration
+const DEFAULT_CONCURRENCY = 5; // Number of pages to fetch concurrently
+const MAX_ERRORS = 5; // Stop if consecutive errors reach this limit
 
 const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
   const pageStartTime = Date.now();
@@ -20,15 +24,23 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
       DUBAI_XPLATES_SELECTORS.URL,
       DUBAI_XPLATES_SELECTORS.GET_REQUEST_OPTIONS(pageNumber) as any
     );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
     const html = await response.text();
 
     if (html.length === 0) {
-      shouldContinue = false;
-      return;
+      throw new Error("No HTML returned for page " + pageNumber);
     }
 
     const $ = cheerio.load(html);
     const plates = Array.from($(DUBAI_XPLATES_SELECTORS.ALL_PLATES));
+
+    if (plates.length === 0) {
+      return; // Stop if no plates are found
+    }
 
     for (const plate of plates) {
       const plateElement = $(plate);
@@ -53,7 +65,7 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
 
       const newPlate: Plate = {
         source: DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
-        number: number,
+        number,
         price,
         emirate,
         url,
@@ -61,10 +73,7 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
         image: "NA",
       };
 
-      const plateValidation = validatePlate(
-        newPlate,
-        DUBAI_XPLATES_SELECTORS.SOURCE_NAME
-      );
+      const plateValidation = validatePlate(newPlate, DUBAI_XPLATES_SELECTORS.SOURCE_NAME);
 
       if (!plateValidation.isValid) {
         invalidPlates.push(plateValidation.data);
@@ -81,31 +90,53 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
       durationMs: pageDurationMs,
     });
   } catch (error) {
-    console.error(`Error fetching page ${pageNumber}:`, error);
+    logger.log(
+      DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
+      LEVEL.ERROR,
+      `Error fetching data for page ${pageNumber}: ${error}`
+    );
+    throw error; // Propagate error for handling in the main function
   }
 };
 
 export const scrapeDubaiXplates = async (
-  startPage: number,
-  endPage: number,
-  concurrentRequests: number =( endPage - startPage + 1 ) / 3// Default number of concurrent requests
+  concurrentRequests: number = DEFAULT_CONCURRENCY // Default number of concurrent requests
 ): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
-  let pageNumber = startPage;
+  let pageNumber = 1;
+  let consecutiveErrors = 0;
 
-  // Generate an array of page numbers to scrape
-  const pageNumbers = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+  while (true) {
+    try {
+      // Fetch a batch of pages concurrently
+      const pagesToScrape = Array.from({ length: concurrentRequests }, (_, i) => pageNumber + i);
+      
+      await Promise.all(pagesToScrape.map((page) => fetchDubaiXplatesPage(page)));
 
-  while (shouldContinue && pageNumber <= endPage) {
-    // Fetch a batch of pages concurrently
-    const pagesToScrape = pageNumbers.slice(pageNumber - startPage, pageNumber - startPage + concurrentRequests);
+      console.log('Scraped pages:', pagesToScrape);
+      
+      // Reset error counter after successful batch
+      consecutiveErrors = 0;
 
-    await Promise.all(pagesToScrape.map((page) => fetchDubaiXplatesPage(page)));
-
-    console.log('Scraped pages:', pagesToScrape);
-
-    // Update pageNumber after each batch
-    pageNumber += concurrentRequests;
+      // Update pageNumber after each batch
+      pageNumber += concurrentRequests;
+    } catch (error) {
+      consecutiveErrors += 1;
+      logger.log(
+        DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
+        LEVEL.ERROR,
+        `Error during scraping: ${error}`
+      );
+      
+      if (consecutiveErrors >= MAX_ERRORS) {
+        logger.log(
+          DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
+          LEVEL.ERROR,
+          `Stopping due to ${MAX_ERRORS} consecutive errors.`
+        );
+        break; // Stop scraping if too many errors occur
+      }
+    }
   }
 
   const endTime = Date.now();

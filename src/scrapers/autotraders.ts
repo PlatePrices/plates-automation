@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 import { Plate } from "../types/plates.js";
-import { isvalidNumber, validatePlate } from "../validation/zod.js";
+import { validatePlate } from "../validation/zod.js";
 import { performanceType } from "../types/performance.js";
 import { AutoTraders_SELECTORS } from "../config/autoTraders.config.js";
 import database from "../Database/db.js";
@@ -38,7 +38,7 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
       const character = link.split("/")[6];
       const emirate = link.split("/")[5];
       const plateNumber = plateElement.find(AutoTraders_SELECTORS.PLATE_NUMBER).text().trim();
-      const image = "NA";
+      const image = "NA"; // Assuming no image URL provided
 
       const newPlate: Plate = {
         image,
@@ -50,8 +50,8 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
         source: AutoTraders_SELECTORS.SOURCE_NAME,
       };
 
+      // Validate plate
       const plateValidation = validatePlate(newPlate, AutoTraders_SELECTORS.SOURCE_NAME);
-
       if (plateValidation.isValid) {
         validPlates.push(newPlate);
       } else {
@@ -95,6 +95,7 @@ export const scrapeAutoTradersPlates = async (
   const endTime = Date.now();
   const totalTimeInMs = endTime - startTime;
 
+  // Save source performance data
   const sourcePerformance = await database.saveSourceOperationPerformance(
     AutoTraders_SELECTORS.SOURCE_NAME,
     new Date(startTime),
@@ -102,6 +103,7 @@ export const scrapeAutoTradersPlates = async (
     totalTimeInMs
   );
 
+  // Save page performance data
   await database.savePagePerformance(
     sourcePerformance.operation_id,
     pagePerformance

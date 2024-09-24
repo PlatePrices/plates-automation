@@ -11,6 +11,10 @@ const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
 
+// Concurrency configuration
+const DEFAULT_CONCURRENCY = 5; // Number of pages to fetch concurrently
+const MAX_ERRORS = 5; // Stop if consecutive errors reach this limit
+
 const fetchDubizzlePage = async (pageNumber: number): Promise<void> => {
   const pageStartTime = Date.now();
   try {
@@ -74,39 +78,49 @@ const fetchDubizzlePage = async (pageNumber: number): Promise<void> => {
       LEVEL.ERROR,
       `Error fetching data for page ${pageNumber}: ${error}`
     );
+    throw error; // Propagate error to handle in concurrency control
   }
 };
 
 export const scrapeDubizzlePlates = async (
-  startPage: number,
-  endPage: number,
-  concurrentRequests: number = Math.min( endPage - startPage + 1) / 3// Default concurrency is 5 or total pages if fewer
+  concurrentRequests: number = DEFAULT_CONCURRENCY
 ): Promise<validAndInvalidPlates> => {
- 
+  let currentPage = 1;
+  let consecutiveErrors = 0;
   const startTime = Date.now();
   let shouldContinue = true;
-  let currentPage = startPage;
 
-  // Generate array of page numbers
-  const pageNumbers = Array.from(
-    { length: endPage - startPage + 1 },
-    (_, i) => startPage + i
-  );
+  while (shouldContinue) {
+    try {
+      // Fetch multiple pages concurrently
+      const pagesToScrape = Array.from(
+        { length: concurrentRequests },
+        (_, i) => currentPage + i
+      );
 
-  while (shouldContinue && currentPage <= endPage) {
-    const pagesToScrape = pageNumbers.slice(
-      currentPage - startPage,
-      currentPage - startPage + concurrentRequests
-    );
+      await Promise.all(
+        pagesToScrape.map((pageNumber) => fetchDubizzlePage(pageNumber))
+      );
 
-    await Promise.all(
-      pagesToScrape.map((pageNumber) => fetchDubizzlePage(pageNumber))
-    );
+      console.log("Scraped pages:", pagesToScrape);
 
-    console.log("Scraped pages:", pagesToScrape);
+      // Reset error counter after successful batch
+      consecutiveErrors = 0;
 
-    // Update the page number for the next batch
-    currentPage += concurrentRequests;
+      // Update currentPage for the next batch
+      currentPage += concurrentRequests;
+    } catch (error) {
+      // Handle errors and track consecutive errors
+      consecutiveErrors += 1;
+      if (consecutiveErrors >= MAX_ERRORS) {
+        logger.log(
+          DUBIZZLE_SELECTORS.SOURCE_NAME,
+          LEVEL.ERROR,
+          `Stopping due to ${MAX_ERRORS} consecutive errors.`
+        );
+        shouldContinue = false;
+      }
+    }
   }
 
   const endTime = Date.now();

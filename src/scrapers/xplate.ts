@@ -20,10 +20,15 @@ const fetchXplatePage = async (pageNumber: number) => {
   const $ = cheerio.load(html);
 
   if ($(XPLATES_SELECTORS.ERROR_MESSAGE_SELECTOR).length) {
-    shouldContinue = false;
+    shouldContinue = false; // Stop fetching pages when error message is encountered
     return;
   }
   const plates = Array.from($(XPLATES_SELECTORS.ALL_PLATES)).slice(1);
+
+  if (plates.length === 0) {
+    shouldContinue = false; // Stop fetching if no plates found
+    return;
+  }
 
   for (const plate of plates) {
     const plateElement = $(plate);
@@ -70,10 +75,6 @@ const fetchXplatePage = async (pageNumber: number) => {
     );
     if (!plateValidation.isValid) {
       invalidPlates.push(plateValidation.data);
-      console.log(
-        `Page: ${pageNumber}, Invalid plate:`,
-        plateValidation.data
-      );
     } else {
       validPlates.push(newPlate);
     }
@@ -88,20 +89,24 @@ const fetchXplatePage = async (pageNumber: number) => {
 };
 
 export const scrapeXplatesPlates = async (
-  startPage: number,
-  endPage: number,
-  concurrentRequests: number = (endPage - startPage + 1 ) / 3
+  concurrentRequests: number = 5 // Default concurrency
 ): Promise<validAndInvalidPlates> => {
   console.log('Starting scraping from Xplate...');
   const startTime = Date.now();
+  let currentPage = 1;
 
-  const pageNumbers = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+  while (shouldContinue) {
+    const pagesToScrape = Array.from(
+      { length: concurrentRequests },
+      (_, i) => currentPage + i
+    );
 
-  while (pageNumbers.length > 0 && shouldContinue) {
-    const pagesToScrape = pageNumbers.splice(0, concurrentRequests);
     console.log(`Scraping pages: ${pagesToScrape}`);
 
     await Promise.all(pagesToScrape.map((page) => fetchXplatePage(page)));
+
+    // Move to the next set of pages
+    currentPage += concurrentRequests;
   }
 
   const endTime = Date.now();
