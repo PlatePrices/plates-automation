@@ -12,26 +12,26 @@ import { scrapeAlShamilPlates } from './scrapers/alshamsionline.js';
 import { scrapeAutoTradersPlates } from './scrapers/autotraders.js';
 import { scrapePlates_2020 } from './scrapers/plates_2020.js';
 import { scrapeDubaiXplates } from './scrapers/dubaixplates.js';
-import {io} from 'socket.io-client'
+import { io } from 'socket.io-client'
 import { sources } from './types/plates.js';
 dotenv.config();
 
-const socket =  io('https://t0wco0cwsskcw80488gw8g8w.plateprices.com');
+const socket = io('https://t0wco0cwsskcw80488gw8g8w.plateprices.com');
 type scrapeData = {
   sources: sources[],
   startPage: number,
   endPage: number
 }
-socket.on('startScraping', async(data : scrapeData) => {
-  console.log('startPage : ', data.startPage, " endPage : ", data.endPage  )
-await getSelectedPlates(data.sources, data.startPage, data.endPage);
+socket.on('startScraping', async (data: scrapeData) => {
+  console.log('startPage : ', data.startPage, " endPage : ", data.endPage)
+  await getSelectedPlates(data.sources, data.startPage, data.endPage);
 })
 
 
 
 
 async function getSelectedPlates(
-  sources: sources [],
+  sources: sources[],
   startPage: number,
   endPage: number
 ) {
@@ -68,4 +68,6 @@ async function getSelectedPlates(
   await database.saveMainOperationPerformance(new Date(startTime), new Date(endTime), totalDurationMs);
   logger.log('main', LEVEL.INFO, `time in ms: ${totalDurationMs}`)
   logger.log('main', LEVEL.INFO, 'finished scraping');
+  socket.emit('scrapingComplete');
+
 }
