@@ -89,15 +89,18 @@ const fetchXplatePage = async (pageNumber: number) => {
 };
 
 export const scrapeXplatesPlates = async (
+  startPage: number,
+  endPage: number,
   concurrentRequests: number = 5 // Default concurrency
 ): Promise<validAndInvalidPlates> => {
   console.log('Starting scraping from Xplate...');
   const startTime = Date.now();
-  let currentPage = 1;
+  let currentPage = startPage; // Start scraping from startPage
 
-  while (shouldContinue) {
+  while (shouldContinue && currentPage <= endPage) { // Continue only until endPage
+    const remainingPages = endPage - currentPage + 1; // Calculate how many pages are left
     const pagesToScrape = Array.from(
-      { length: concurrentRequests },
+      { length: Math.min(concurrentRequests, remainingPages) }, // Ensure we don't exceed endPage
       (_, i) => currentPage + i
     );
 
@@ -107,6 +110,11 @@ export const scrapeXplatesPlates = async (
 
     // Move to the next set of pages
     currentPage += concurrentRequests;
+
+    // Stop if there are no more pages left to scrape
+    if (currentPage > endPage) {
+      shouldContinue = false;
+    }
   }
 
   const endTime = Date.now();
