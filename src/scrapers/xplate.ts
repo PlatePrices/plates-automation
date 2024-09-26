@@ -6,9 +6,9 @@ import { Plate, validAndInvalidPlates } from "../types/plates.js";
 import { validatePlate } from "../validation/zod.js";
 import database from "../Database/db.js";
 
-const validPlates: Plate[] = [];
-const invalidPlates: Plate[] = [];
-const pagePerformance: performanceType[] = [];
+let validPlates: Plate[] = [];
+let invalidPlates: Plate[] = [];
+let pagePerformance: performanceType[] = [];
 let shouldContinue = true;
 
 const fetchXplatePage = async (pageNumber: number) => {
@@ -61,11 +61,11 @@ const fetchXplatePage = async (pageNumber: number) => {
 
     if (
       newPlate.price?.trim() ===
-        XPLATES_SELECTORS.SKIP_CONFIGURATION.CALL_FOR_PRICE ||
+      XPLATES_SELECTORS.SKIP_CONFIGURATION.CALL_FOR_PRICE ||
       newPlate.duration?.trim() ===
-        XPLATES_SELECTORS.SKIP_CONFIGURATION.FEATURED ||
+      XPLATES_SELECTORS.SKIP_CONFIGURATION.FEATURED ||
       newPlate.character?.trim() ===
-        XPLATES_SELECTORS.SKIP_CONFIGURATION.CHARACTER_HAS_NOC
+      XPLATES_SELECTORS.SKIP_CONFIGURATION.CHARACTER_HAS_NOC
     )
       continue;
 
@@ -91,16 +91,21 @@ const fetchXplatePage = async (pageNumber: number) => {
 export const scrapeXplatesPlates = async (
   startPage: number,
   endPage: number,
-  concurrentRequests: number = 5 // Default concurrency
+  concurrentRequests: number = 5
 ): Promise<validAndInvalidPlates> => {
   console.log('Starting scraping from Xplate...');
+  validPlates = [];
+  invalidPlates = [];
   const startTime = Date.now();
-  let currentPage = startPage; // Start scraping from startPage
+  let currentPage = startPage;
 
-  while (shouldContinue && currentPage <= endPage) { // Continue only until endPage
-    const remainingPages = endPage - currentPage + 1; // Calculate how many pages are left
+  console.log(shouldContinue, currentPage <= endPage)
+  while (shouldContinue && currentPage <= endPage) {
+
+    console.log('entered')
+    const remainingPages = endPage - currentPage + 1;
     const pagesToScrape = Array.from(
-      { length: Math.min(concurrentRequests, remainingPages) }, // Ensure we don't exceed endPage
+      { length: Math.min(concurrentRequests, remainingPages) },
       (_, i) => currentPage + i
     );
 
@@ -117,6 +122,7 @@ export const scrapeXplatesPlates = async (
     }
   }
 
+  console.log('finsihed that')
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
   const sourcePerformance = await database.saveSourceOperationPerformance(
@@ -131,5 +137,6 @@ export const scrapeXplatesPlates = async (
     pagePerformance
   );
 
+  shouldContinue = true;
   return { invalidPlates, validPlates };
 };
