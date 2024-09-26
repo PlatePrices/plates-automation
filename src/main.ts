@@ -7,7 +7,7 @@ import { io } from 'socket.io-client';
 import { sources } from './types/plates.js';
 dotenv.config();
 
-const socket = io('http://localhost:5454');
+const socket = io('https://t0wco0cwsskcw80488gw8g8w.plateprices.com');
 
 type scrapeData = {
   sources: sources[],
