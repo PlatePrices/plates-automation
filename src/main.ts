@@ -15,18 +15,16 @@ type scrapeData = {
   endPage: number
 };
 
-// Flag to track if scraping is in progress
 let isScrapingInProgress = false;
 
 socket.on('startScraping', async (data: scrapeData) => {
-  // Check if scraping is already in progress
   if (isScrapingInProgress) {
     console.log('Scraping is already in progress, rejecting new task');
     return;
   }
 
   console.log('startPage : ', data.startPage, " endPage : ", data.endPage);
-  isScrapingInProgress = true;  // Set flag to true before starting
+  isScrapingInProgress = true; 
   await getSelectedPlates(data.sources, data.startPage, data.endPage);
 });
 
@@ -41,7 +39,6 @@ async function getSelectedPlates(
 
     await database.connectToDb();
     const plateGroups = await Promise.all([
-      // Add other scrapers as needed
       scrapeXplatesPlates(startPage, endPage)
     ]);
 
@@ -63,9 +60,8 @@ async function getSelectedPlates(
     logger.log('main', LEVEL.INFO, `time in ms: ${totalDurationMs}`);
     logger.log('main', LEVEL.INFO, 'finished scraping');
   } catch (error) {
-    logger.log('main', LEVEL.ERROR, `Error during scraping: ${error.message}`);
+    logger.log('main', LEVEL.ERROR, `Error during scraping: ${error}`);
   } finally {
-    // Reset the flag once scraping is finished
     isScrapingInProgress = false;
     socket.emit('scrapingComplete');
   }
