@@ -17,6 +17,10 @@ export const REDIS_URL_CONNECTION = env
   .required()
   .asString();
 
+export const SOCKET_SERVER_URL = env
+  .get('SOCKET_SERVER_URL')
+  .required()
+  .asString()
 export const sequalize = new Sequelize(DB_CONNECTION_URL, {
   dialect: "mysql",
   logging: false,

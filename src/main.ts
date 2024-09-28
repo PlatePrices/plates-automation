@@ -5,9 +5,10 @@ import { scrapeXplatesPlates } from './scrapers/xplate.js';
 import { LEVEL } from './types/logs.js';
 import { io } from 'socket.io-client';
 import { sources } from './types/plates.js';
+import { SOCKET_SERVER_URL } from './config/config.js';
 dotenv.config();
 
-const socket = io('http://localhost:5454');
+const socket = io(SOCKET_SERVER_URL);
 
 type scrapeData = {
   sources: sources[],
