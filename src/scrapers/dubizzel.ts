@@ -11,9 +11,8 @@ const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
 
-// Concurrency configuration
-const DEFAULT_CONCURRENCY = 5; // Number of pages to fetch concurrently
-const MAX_ERRORS = 5; // Stop if consecutive errors reach this limit
+const DEFAULT_CONCURRENCY = 5;
+const MAX_ERRORS = 5;
 
 const fetchDubizzlePage = async (pageNumber: number): Promise<void> => {
   const pageStartTime = Date.now();
@@ -78,21 +77,22 @@ const fetchDubizzlePage = async (pageNumber: number): Promise<void> => {
       LEVEL.ERROR,
       `Error fetching data for page ${pageNumber}: ${error}`
     );
-    throw error; // Propagate error to handle in concurrency control
+    throw error;
   }
 };
 
 export const scrapeDubizzlePlates = async (
+  startPage: number,
+  endPage: number,
   concurrentRequests: number = DEFAULT_CONCURRENCY
 ): Promise<validAndInvalidPlates> => {
-  let currentPage = 1;
+  let currentPage = startPage;
   let consecutiveErrors = 0;
   const startTime = Date.now();
   let shouldContinue = true;
 
-  while (shouldContinue) {
+  while (shouldContinue && currentPage <= endPage) {
     try {
-      // Fetch multiple pages concurrently
       const pagesToScrape = Array.from(
         { length: concurrentRequests },
         (_, i) => currentPage + i
@@ -104,13 +104,14 @@ export const scrapeDubizzlePlates = async (
 
       console.log("Scraped pages:", pagesToScrape);
 
-      // Reset error counter after successful batch
       consecutiveErrors = 0;
 
-      // Update currentPage for the next batch
       currentPage += concurrentRequests;
+
+      if (currentPage > endPage) {
+        shouldContinue = false;
+      }
     } catch (error) {
-      // Handle errors and track consecutive errors
       consecutiveErrors += 1;
       if (consecutiveErrors >= MAX_ERRORS) {
         logger.log(

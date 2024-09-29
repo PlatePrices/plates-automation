@@ -9,10 +9,12 @@ import { validatePlate } from "../validation/zod.js";
 import database from "../Database/db.js";
 import { LEVEL } from "../types/logs.js";
 
-const DEFAULT_CONCURRENCY = 5; // Number of pages to fetch concurrently
-const MAX_ERRORS = 5; // Stop if consecutive errors reach this limit
+const DEFAULT_CONCURRENCY = 5;
+const MAX_ERRORS = 5;
 
 export const scrapePlatesAePlates = async (
+  startPage: number,
+  endPage: number,
   concurrencyLimit: number = DEFAULT_CONCURRENCY
 ): Promise<validAndInvalidPlates> => {
   const validPlates: Plate[] = [];
@@ -20,10 +22,9 @@ export const scrapePlatesAePlates = async (
   const pagePerformance: performanceType[] = [];
 
   const startTime = Date.now();
-  let currentPage = 1;
+  let currentPage = startPage;
   let consecutiveErrors = 0;
 
-  // Function to fetch a single page of data
   const fetchPage = async (pageNumber: number): Promise<boolean> => {
     const data = `page=${pageNumber.toString()}`;
     const headers = PLATES_AE_SELECTORS.HEADERS;
@@ -44,7 +45,7 @@ export const scrapePlatesAePlates = async (
 
       const plates = Array.from($(PLATES_AE_SELECTORS.ALL_PLATES));
       if (plates.length === 0) {
-        return false; // No more plates found
+        return false;
       }
 
       for (const plate of plates) {
@@ -81,31 +82,31 @@ export const scrapePlatesAePlates = async (
         LEVEL.ERROR,
         `Error fetching page ${pageNumber}: ${error}`
       );
-      return false; // Return false on error
+      return false;
     }
   };
 
-  // Function to run page fetchers in batches with a concurrency limit
   const fetchPagesInBatches = async () => {
-    while (true) {
+    let shouldContinue = true;
+    while (shouldContinue && currentPage <= endPage) {
       const batch = Array.from({ length: concurrencyLimit }, (_, i) => currentPage + i);
 
-      console.log(batch)
-      // Run all page fetchers concurrently
       const results = await Promise.all(batch.map((page) => fetchPage(page)));
 
-      // Check if any page returned no data
       if (!results.every(Boolean)) {
-        break; // Exit loop if any page returns no data
+        shouldContinue = false;
       }
 
-      // Reset consecutive errors after a successful batch
       consecutiveErrors = 0;
-      currentPage += concurrencyLimit; // Move to the next batch
+      currentPage += concurrencyLimit;
+
+      if (currentPage > endPage) {
+        shouldContinue = false;
+      }
+
     }
   };
 
-  // Start fetching pages in batches with concurrency
   await fetchPagesInBatches();
 
   const endTime = Date.now();

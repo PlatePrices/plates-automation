@@ -20,13 +20,13 @@ const fetchXplatePage = async (pageNumber: number) => {
   const $ = cheerio.load(html);
 
   if ($(XPLATES_SELECTORS.ERROR_MESSAGE_SELECTOR).length) {
-    shouldContinue = false; // Stop fetching pages when error message is encountered
+    shouldContinue = false; 
     return;
   }
   const plates = Array.from($(XPLATES_SELECTORS.ALL_PLATES)).slice(1);
 
   if (plates.length === 0) {
-    shouldContinue = false; // Stop fetching if no plates found
+    shouldContinue = false;
     return;
   }
 
@@ -93,7 +93,6 @@ export const scrapeXplatesPlates = async (
   endPage: number,
   concurrentRequests: number = 5
 ): Promise<validAndInvalidPlates> => {
-  console.log('Starting scraping from Xplate...');
   validPlates = [];
   invalidPlates = [];
   const startTime = Date.now();
@@ -109,20 +108,16 @@ export const scrapeXplatesPlates = async (
       (_, i) => currentPage + i
     );
 
-    console.log(`Scraping pages: ${pagesToScrape}`);
 
     await Promise.all(pagesToScrape.map((page) => fetchXplatePage(page)));
 
-    // Move to the next set of pages
     currentPage += concurrentRequests;
 
-    // Stop if there are no more pages left to scrape
     if (currentPage > endPage) {
       shouldContinue = false;
     }
   }
 
-  console.log('finsihed that')
   const endTime = Date.now();
   const totalDurationMs = endTime - startTime;
   const sourcePerformance = await database.saveSourceOperationPerformance(

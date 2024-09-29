@@ -5,16 +5,15 @@ import database from "../Database/db.js";
 import { DUBAI_XPLATES_SELECTORS } from "../config/dubaixplates.config.js";
 import { performanceType } from "../types/performance.js";
 import { validatePlate } from "../validation/zod.js";
-import logger from "../logger/winston.js"; // Assuming you want to use logger for error handling
+import logger from "../logger/winston.js";
 import { LEVEL } from "../types/logs.js";
 
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
 
-// Concurrency configuration
-const DEFAULT_CONCURRENCY = 5; // Number of pages to fetch concurrently
-const MAX_ERRORS = 5; // Stop if consecutive errors reach this limit
+const DEFAULT_CONCURRENCY = 5; 
+const MAX_ERRORS = 5;
 
 const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
   const pageStartTime = Date.now();
@@ -39,7 +38,7 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
     const plates = Array.from($(DUBAI_XPLATES_SELECTORS.ALL_PLATES));
 
     if (plates.length === 0) {
-      return; // Stop if no plates are found
+      return;
     }
 
     for (const plate of plates) {
@@ -95,31 +94,33 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
       LEVEL.ERROR,
       `Error fetching data for page ${pageNumber}: ${error}`
     );
-    throw error; // Propagate error for handling in the main function
+    throw error; 
   }
 };
 
 export const scrapeDubaiXplates = async (
-  concurrentRequests: number = DEFAULT_CONCURRENCY // Default number of concurrent requests
+  startPage: number, 
+  endPage: number,
+  concurrentRequests: number = DEFAULT_CONCURRENCY
 ): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
-  let pageNumber = 1;
+  let pageNumber = startPage;
   let consecutiveErrors = 0;
-
-  while (true) {
+  let shouldContinue =  true;
+  while (shouldContinue && pageNumber <= endPage) {
     try {
-      // Fetch a batch of pages concurrently
       const pagesToScrape = Array.from({ length: concurrentRequests }, (_, i) => pageNumber + i);
       
       await Promise.all(pagesToScrape.map((page) => fetchDubaiXplatesPage(page)));
 
-      console.log('Scraped pages:', pagesToScrape);
       
-      // Reset error counter after successful batch
       consecutiveErrors = 0;
 
-      // Update pageNumber after each batch
       pageNumber += concurrentRequests;
+
+      if(pageNumber > endPage) {
+        shouldContinue = false;
+      }
     } catch (error) {
       consecutiveErrors += 1;
       logger.log(
@@ -134,7 +135,8 @@ export const scrapeDubaiXplates = async (
           LEVEL.ERROR,
           `Stopping due to ${MAX_ERRORS} consecutive errors.`
         );
-        break; // Stop scraping if too many errors occur
+        shouldContinue = false;
+        break; 
       }
     }
   }
@@ -142,7 +144,6 @@ export const scrapeDubaiXplates = async (
   const endTime = Date.now();
   const totalDurationInMs = endTime - startTime;
 
-  // Save the total performance of the scrape
   const sourcePerformance = await database.saveSourceOperationPerformance(
     DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
     new Date(startTime),
@@ -150,7 +151,6 @@ export const scrapeDubaiXplates = async (
     totalDurationInMs
   );
 
-  // Save the performance of individual pages
   await database.savePagePerformance(
     sourcePerformance.operation_id,
     pagePerformance

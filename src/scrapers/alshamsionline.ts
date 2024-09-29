@@ -8,14 +8,12 @@ import { AL_SHAMIL_SELECTORS } from "../config/alshamilonline.config.js";
 import logger from "../logger/winston.js";
 import { LEVEL } from "../types/logs.js";
 
-// Arrays for storing valid and invalid plates
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
 
-// Concurrency and error handling settings
-const DEFAULT_CONCURRENCY = 5; // Default number of concurrent requests
-const MAX_ERRORS = 5; // Max consecutive errors before stopping
+const DEFAULT_CONCURRENCY = 5;
+const MAX_ERRORS = 5;
 
 let finished = false;
 
@@ -37,7 +35,6 @@ const fetchAlShamilPage = async (pageNumber: number): Promise<void> => {
     const $ = cheerio.load(html);
     const plates = Array.from($(AL_SHAMIL_SELECTORS.ALL_PLATES).children());
 
-    // Stop if no more than 99 plates are found (implies end of data)
     if (plates.length < 99) {
       finished = true;
     }
@@ -62,7 +59,6 @@ const fetchAlShamilPage = async (pageNumber: number): Promise<void> => {
       const duration = plateElement.find($(AL_SHAMIL_SELECTORS.DATE)).text().trim() || "";
       let emirate = "NA";
 
-      // Determine the emirate based on the info length
       if (character.length < 3) {
         emirate = info.slice(2, info.length - 2).join(" ");
       } else {
@@ -104,28 +100,27 @@ const fetchAlShamilPage = async (pageNumber: number): Promise<void> => {
   }
 };
 
-export const scrapeAlShamilPlates = async (concurrentRequests: number = DEFAULT_CONCURRENCY): Promise<validAndInvalidPlates> => {
-  let currentPage = 1;
+export const scrapeAlShamilPlates = async (startPage: number, endPage: number, concurrentRequests: number = DEFAULT_CONCURRENCY): Promise<validAndInvalidPlates> => {
+  let currentPage = startPage;
   let consecutiveErrors = 0;
   const startTime = Date.now();
   let shouldContinue = true;
 
-  while (shouldContinue && !finished) {
+  while (shouldContinue && !finished && currentPage <= endPage) {
     try {
-      // Fetch multiple pages concurrently
       const pagesToScrape = Array.from({ length: concurrentRequests }, (_, i) => currentPage + i);
 
       await Promise.all(pagesToScrape.map((pageNumber) => fetchAlShamilPage(pageNumber)));
 
-      console.log("Scraped pages:", pagesToScrape);
 
-      // Reset error counter after a successful batch
       consecutiveErrors = 0;
 
-      // Update currentPage for the next batch
       currentPage += concurrentRequests;
+
+      if(currentPage > endPage) {
+        shouldContinue = false;
+      }
     } catch (error) {
-      // Handle errors and track consecutive errors
       consecutiveErrors += 1;
       if (consecutiveErrors >= MAX_ERRORS) {
         logger.log(AL_SHAMIL_SELECTORS.SOURCE_NAME, LEVEL.ERROR, `Stopping due to ${MAX_ERRORS} consecutive errors.`);

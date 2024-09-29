@@ -25,7 +25,6 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
 
     const plates = Array.from($(AutoTraders_SELECTORS.ALL_PLATES));
 
-    // Stop if no more plates are found
     if (plates.length === 0) {
       finished = true;
       return;
@@ -38,7 +37,7 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
       const character = link.split("/")[6];
       const emirate = link.split("/")[5];
       const plateNumber = plateElement.find(AutoTraders_SELECTORS.PLATE_NUMBER).text().trim();
-      const image = "NA"; // Assuming no image URL provided
+      const image = "NA";
 
       const newPlate: Plate = {
         image,
@@ -50,13 +49,11 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
         source: AutoTraders_SELECTORS.SOURCE_NAME,
       };
 
-      // Validate plate
       const plateValidation = validatePlate(newPlate, AutoTraders_SELECTORS.SOURCE_NAME);
       if (plateValidation.isValid) {
         validPlates.push(newPlate);
       } else {
         invalidPlates.push(plateValidation.data);
-        console.log("Invalid plate: ", plateValidation.data);
       }
     }
 
@@ -74,28 +71,23 @@ const fetchPage = async (pageNumber: number): Promise<void> => {
 export const scrapeAutoTradersPlates = async (
   startPage: number,
   endPage: number,
-  concurrentRequests: number = (endPage - startPage + 1) / 3 // Default concurrent requests
+  concurrentRequests: number = (endPage - startPage + 1) / 3
 ) => {
   const startTime = Date.now();
   let pageNumber = startPage;
   const pageNumbers = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
 
   while (!finished && pageNumber <= endPage) {
-    // Fetch a batch of pages concurrently
     const pagesToScrape = pageNumbers.slice(pageNumber - startPage, pageNumber - startPage + concurrentRequests);
 
     await Promise.all(pagesToScrape.map((page) => fetchPage(page)));
 
-    console.log('Scraped pages:', pagesToScrape);
-    
-    // Update pageNumber after each batch
     pageNumber += concurrentRequests;
   }
 
   const endTime = Date.now();
   const totalTimeInMs = endTime - startTime;
 
-  // Save source performance data
   const sourcePerformance = await database.saveSourceOperationPerformance(
     AutoTraders_SELECTORS.SOURCE_NAME,
     new Date(startTime),
@@ -103,7 +95,6 @@ export const scrapeAutoTradersPlates = async (
     totalTimeInMs
   );
 
-  // Save page performance data
   await database.savePagePerformance(
     sourcePerformance.operation_id,
     pagePerformance
