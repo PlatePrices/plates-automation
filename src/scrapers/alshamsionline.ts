@@ -11,7 +11,7 @@ import { LEVEL } from '../types/logs.js';
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
-
+console.log('test ci and cd')
 const DEFAULT_CONCURRENCY = 5;
 const MAX_ERRORS = 5;
 
