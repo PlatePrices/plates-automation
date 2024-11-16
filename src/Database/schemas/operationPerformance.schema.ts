@@ -9,10 +9,14 @@ interface OperationPerformanceAttributes {
   totalDurationMs: number;
 }
 
-interface OperationPerformanceCreationAttributes extends Optional<OperationPerformanceAttributes, 'operation_id'> {}
+interface OperationPerformanceCreationAttributes
+  extends Optional<OperationPerformanceAttributes, 'operation_id'> {}
 
 class OperationPerformance
-  extends Model<OperationPerformanceAttributes, OperationPerformanceCreationAttributes>
+  extends Model<
+    OperationPerformanceAttributes,
+    OperationPerformanceCreationAttributes
+  >
   implements OperationPerformanceAttributes
 {
   public operation_id!: number;
@@ -49,7 +53,7 @@ OperationPerformance.init(
   {
     sequelize,
     tableName: 'operation_performance',
-    timestamps: false
+    timestamps: false,
   },
 );
 

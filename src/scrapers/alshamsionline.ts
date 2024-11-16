@@ -1,12 +1,12 @@
-import fetch from "node-fetch";
-import * as cheerio from "cheerio";
-import { Plate, validAndInvalidPlates } from "../types/plates.js";
-import { isvalidNumber, validatePlate } from "../validation/zod.js";
-import database from "../Database/db.js";
-import { performanceType } from "../types/performance.js";
-import { AL_SHAMIL_SELECTORS } from "../config/alshamilonline.config.js";
-import logger from "../logger/winston.js";
-import { LEVEL } from "../types/logs.js";
+import fetch from 'node-fetch';
+import * as cheerio from 'cheerio';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
+import { isvalidNumber, validatePlate } from '../validation/zod.js';
+import database from '../Database/db.js';
+import { performanceType } from '../types/performance.js';
+import { AL_SHAMIL_SELECTORS } from '../config/alshamilonline.config.js';
+import logger from '../logger/winston.js';
+import { LEVEL } from '../types/logs.js';
 
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
@@ -23,7 +23,7 @@ const fetchAlShamilPage = async (pageNumber: number): Promise<void> => {
 
   try {
     const response = await fetch(AL_SHAMIL_SELECTORS.URL(pageNumber), {
-      method: "GET",
+      method: 'GET',
       headers,
     });
 
@@ -42,31 +42,37 @@ const fetchAlShamilPage = async (pageNumber: number): Promise<void> => {
     for (const plate of plates) {
       const plateElement = $(plate);
       const linkElement = plateElement.find(AL_SHAMIL_SELECTORS.PLATE_LINK);
-      const isSold = linkElement.find("button").text().trim() || "";
-      if (isSold === "Sold" || isSold === "Booked") continue;
+      const isSold = linkElement.find('button').text().trim() || '';
+      if (isSold === 'Sold' || isSold === 'Booked') continue;
 
-      const link = linkElement.attr("href") || "";
-      const info = link.split("-");
-      if (info[1].split("/")[1] === "bike") continue;
+      const link = linkElement.attr('href') || '';
+      const info = link.split('-');
+      if (info[1].split('/')[1] === 'bike') continue;
 
-      let price = plateElement.find(AL_SHAMIL_SELECTORS.PRICE).text().trim() || "";
-      if (!price || price === "AED 0") continue;
-      price = price !== "Call for price" ? price.split(" ")[1].replace(/[^0-9]/g, "") : price;
-      price = ""
+      let price =
+        plateElement.find(AL_SHAMIL_SELECTORS.PRICE).text().trim() || '';
+      if (!price || price === 'AED 0') continue;
+      price =
+        price !== 'Call for price'
+          ? price.split(' ')[1].replace(/[^0-9]/g, '')
+          : price;
+      price = '';
 
       let character = info[info.length - 2];
-      const number = info[info.length - 1].split("_")[0];
-      const duration = plateElement.find($(AL_SHAMIL_SELECTORS.DATE)).text().trim() || "";
-      let emirate = "NA";
+      const number = info[info.length - 1].split('_')[0];
+      const duration =
+        plateElement.find($(AL_SHAMIL_SELECTORS.DATE)).text().trim() || '';
+      let emirate = 'NA';
 
       if (character.length < 3) {
-        emirate = info.slice(2, info.length - 2).join(" ");
+        emirate = info.slice(2, info.length - 2).join(' ');
       } else {
-        character = "?";
-        emirate = info.slice(2, info.length - 3).join(" ");
+        character = '?';
+        emirate = info.slice(2, info.length - 3).join(' ');
       }
 
-      const image = plateElement.find(AL_SHAMIL_SELECTORS.IMAGE).attr("data-src") || "NA";
+      const image =
+        plateElement.find(AL_SHAMIL_SELECTORS.IMAGE).attr('data-src') || 'NA';
 
       const newPlate: Plate = {
         image,
@@ -79,7 +85,10 @@ const fetchAlShamilPage = async (pageNumber: number): Promise<void> => {
         duration,
       };
 
-      const plateValidation = validatePlate(newPlate, AL_SHAMIL_SELECTORS.SOURCE_NAME);
+      const plateValidation = validatePlate(
+        newPlate,
+        AL_SHAMIL_SELECTORS.SOURCE_NAME,
+      );
 
       if (plateValidation.isValid && isvalidNumber(number)) {
         validPlates.push(plateValidation.data);
@@ -95,12 +104,20 @@ const fetchAlShamilPage = async (pageNumber: number): Promise<void> => {
       durationMs: pageDurationMs,
     });
   } catch (error) {
-    logger.log(AL_SHAMIL_SELECTORS.SOURCE_NAME, LEVEL.ERROR, `Error fetching page ${pageNumber}: ${error}`);
+    logger.log(
+      AL_SHAMIL_SELECTORS.SOURCE_NAME,
+      LEVEL.ERROR,
+      `Error fetching page ${pageNumber}: ${error}`,
+    );
     throw error;
   }
 };
 
-export const scrapeAlShamilPlates = async (startPage: number, endPage: number, concurrentRequests: number = DEFAULT_CONCURRENCY): Promise<validAndInvalidPlates> => {
+export const scrapeAlShamilPlates = async (
+  startPage: number,
+  endPage: number,
+  concurrentRequests: number = DEFAULT_CONCURRENCY,
+): Promise<validAndInvalidPlates> => {
   let currentPage = startPage;
   let consecutiveErrors = 0;
   const startTime = Date.now();
@@ -108,22 +125,30 @@ export const scrapeAlShamilPlates = async (startPage: number, endPage: number, c
 
   while (shouldContinue && !finished && currentPage <= endPage) {
     try {
-      const pagesToScrape = Array.from({ length: concurrentRequests }, (_, i) => currentPage + i);
+      const pagesToScrape = Array.from(
+        { length: concurrentRequests },
+        (_, i) => currentPage + i,
+      );
 
-      await Promise.all(pagesToScrape.map((pageNumber) => fetchAlShamilPage(pageNumber)));
-
+      await Promise.all(
+        pagesToScrape.map((pageNumber) => fetchAlShamilPage(pageNumber)),
+      );
 
       consecutiveErrors = 0;
 
       currentPage += concurrentRequests;
 
-      if(currentPage > endPage) {
+      if (currentPage > endPage) {
         shouldContinue = false;
       }
     } catch (error) {
       consecutiveErrors += 1;
       if (consecutiveErrors >= MAX_ERRORS) {
-        logger.log(AL_SHAMIL_SELECTORS.SOURCE_NAME, LEVEL.ERROR, `Stopping due to ${MAX_ERRORS} consecutive errors.`);
+        logger.log(
+          AL_SHAMIL_SELECTORS.SOURCE_NAME,
+          LEVEL.ERROR,
+          `Stopping due to ${MAX_ERRORS} consecutive errors.`,
+        );
         shouldContinue = false;
       }
     }
@@ -136,10 +161,13 @@ export const scrapeAlShamilPlates = async (startPage: number, endPage: number, c
     AL_SHAMIL_SELECTORS.SOURCE_NAME,
     new Date(startTime),
     new Date(endTime),
-    totalDurationMs
+    totalDurationMs,
   );
 
-  await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance);
+  await database.savePagePerformance(
+    sourcePerformance.operation_id,
+    pagePerformance,
+  );
 
   return { validPlates, invalidPlates };
 };

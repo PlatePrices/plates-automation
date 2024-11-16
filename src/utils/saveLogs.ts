@@ -2,7 +2,11 @@ import axios from 'axios';
 
 import { BETTER_STACK_LOG_API_KEY } from '../config/config.js';
 
-export const savingLogs = async (startTime: Date, totalDurationSec: number, scraper_name: string) => {
+export const savingLogs = async (
+  startTime: Date,
+  totalDurationSec: number,
+  scraper_name: string,
+) => {
   const logData = {
     scraper_name: scraper_name,
     startTime: new Date(startTime).toISOString(),
@@ -17,6 +21,9 @@ export const savingLogs = async (startTime: Date, totalDurationSec: number, scra
       },
     });
   } catch (error) {
-    console.error('Bro there was an error while sending data to betterstack', error);
+    console.error(
+      'Bro there was an error while sending data to betterstack',
+      error,
+    );
   }
 };

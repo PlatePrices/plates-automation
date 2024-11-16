@@ -1,8 +1,8 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import logger from "../logger/winston.js";
-import { invalidPlatesInfo, Plate } from "../types/plates.js";
-import { LEVEL } from "../types/logs.js";
+import logger from '../logger/winston.js';
+import { invalidPlatesInfo, Plate } from '../types/plates.js';
+import { LEVEL } from '../types/logs.js';
 
 const BasePlateSchema = z.object({
   url: z.string().url(),
@@ -15,7 +15,7 @@ const BasePlateSchema = z.object({
 
 export const DubizzlePlateSchema = BasePlateSchema.extend({
   emirate: z.string(),
-  character: z.string().refine((val) => val === "Red" || val.length <= 2, {
+  character: z.string().refine((val) => val === 'Red' || val.length <= 2, {
     message: "Character must be 'Red' or have a maximum length of 2 characters",
   }),
 });
@@ -67,7 +67,7 @@ const schemaMap: Record<string, z.ZodTypeAny> = {
   platesae: PlatesAeSchema,
   numberae: NumberAeSchema,
   emiratesauction: EmiratesAuctionSchema,
-  "2020": Plates2020Schmea,
+  '2020': Plates2020Schmea,
   autotraders: AutoTradersSchema,
   alshamilonline: AlshamilOnlineSchema,
   dubai_xplates: dubaiXplatesSchema,
@@ -79,13 +79,13 @@ export const isvalidNumber = (plateNumber: string): boolean => {
 
 export const validatePlate = (
   plate: Plate,
-  website: string
+  website: string,
 ): invalidPlatesInfo => {
   // this is to ensure that was given is correct and is the schema map
   const schema = schemaMap[website.toLowerCase()] as z.ZodTypeAny | undefined;
 
   if (!schema) {
-    logger.log("zod", LEVEL.DEBUG, `No schema found for website: ${website}`);
+    logger.log('zod', LEVEL.DEBUG, `No schema found for website: ${website}`);
     return { isValid: false, data: plate };
   }
 
@@ -97,7 +97,7 @@ export const validatePlate = (
       logger.log(
         website,
         LEVEL.ERROR,
-        `Validation failed against ${website} schema:`
+        `Validation failed against ${website} schema:`,
       );
       for (const errorMessage of validationResult.error.errors) {
         logger.log(website, LEVEL.ERROR, `error: ${errorMessage.message}`);

@@ -1,13 +1,13 @@
-import * as cheerio from "cheerio";
-import fetch from "node-fetch";
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
 
-import { PLATES_AE_SELECTORS } from "../config/plates.config.js";
-import logger from "../logger/winston.js";
-import { performanceType } from "../types/performance.js";
-import { Plate, validAndInvalidPlates } from "../types/plates.js";
-import { validatePlate } from "../validation/zod.js";
-import database from "../Database/db.js";
-import { LEVEL } from "../types/logs.js";
+import { PLATES_AE_SELECTORS } from '../config/plates.config.js';
+import logger from '../logger/winston.js';
+import { performanceType } from '../types/performance.js';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
+import { validatePlate } from '../validation/zod.js';
+import database from '../Database/db.js';
+import { LEVEL } from '../types/logs.js';
 
 const DEFAULT_CONCURRENCY = 5;
 const MAX_ERRORS = 5;
@@ -15,7 +15,7 @@ const MAX_ERRORS = 5;
 export const scrapePlatesAePlates = async (
   startPage: number,
   endPage: number,
-  concurrencyLimit: number = DEFAULT_CONCURRENCY
+  concurrencyLimit: number = DEFAULT_CONCURRENCY,
 ): Promise<validAndInvalidPlates> => {
   const validPlates: Plate[] = [];
   const invalidPlates: Plate[] = [];
@@ -31,7 +31,7 @@ export const scrapePlatesAePlates = async (
 
     try {
       const response = await fetch(PLATES_AE_SELECTORS.BASE_URL, {
-        method: "POST",
+        method: 'POST',
         headers: headers,
         body: data,
       });
@@ -50,12 +50,16 @@ export const scrapePlatesAePlates = async (
 
       for (const plate of plates) {
         const plateElement = $(plate);
-        const price = plateElement.find(PLATES_AE_SELECTORS.PRICE).text().trim() || "";
-        const url = plateElement.find("a").attr("href") || "";
-        const contact = plateElement.find("a").attr("href")?.slice(4, 15) || "";
-        const number = plateElement.find(PLATES_AE_SELECTORS.PLATE_NUMBER).text().trim() || "";
-        const character = plateElement.find(PLATES_AE_SELECTORS.CHARACTER).text().trim() || "";
-        const img = plateElement.find("img").attr("src") || "";
+        const price =
+          plateElement.find(PLATES_AE_SELECTORS.PRICE).text().trim() || '';
+        const url = plateElement.find('a').attr('href') || '';
+        const contact = plateElement.find('a').attr('href')?.slice(4, 15) || '';
+        const number =
+          plateElement.find(PLATES_AE_SELECTORS.PLATE_NUMBER).text().trim() ||
+          '';
+        const character =
+          plateElement.find(PLATES_AE_SELECTORS.CHARACTER).text().trim() || '';
+        const img = plateElement.find('img').attr('src') || '';
 
         const newPlate: Plate = {
           url,
@@ -67,7 +71,10 @@ export const scrapePlatesAePlates = async (
           source: PLATES_AE_SELECTORS.SOURCE_NAME,
         };
 
-        const plateValidation = validatePlate(newPlate, PLATES_AE_SELECTORS.SOURCE_NAME);
+        const plateValidation = validatePlate(
+          newPlate,
+          PLATES_AE_SELECTORS.SOURCE_NAME,
+        );
         if (!plateValidation.isValid) {
           invalidPlates.push(plateValidation.data);
         } else {
@@ -80,7 +87,7 @@ export const scrapePlatesAePlates = async (
       logger.log(
         PLATES_AE_SELECTORS.SOURCE_NAME,
         LEVEL.ERROR,
-        `Error fetching page ${pageNumber}: ${error}`
+        `Error fetching page ${pageNumber}: ${error}`,
       );
       return false;
     }
@@ -89,7 +96,10 @@ export const scrapePlatesAePlates = async (
   const fetchPagesInBatches = async () => {
     let shouldContinue = true;
     while (shouldContinue && currentPage <= endPage) {
-      const batch = Array.from({ length: concurrencyLimit }, (_, i) => currentPage + i);
+      const batch = Array.from(
+        { length: concurrencyLimit },
+        (_, i) => currentPage + i,
+      );
 
       const results = await Promise.all(batch.map((page) => fetchPage(page)));
 
@@ -103,7 +113,6 @@ export const scrapePlatesAePlates = async (
       if (currentPage > endPage) {
         shouldContinue = false;
       }
-
     }
   };
 
@@ -116,10 +125,13 @@ export const scrapePlatesAePlates = async (
     PLATES_AE_SELECTORS.SOURCE_NAME,
     new Date(startTime),
     new Date(endTime),
-    totalDurationMs
+    totalDurationMs,
   );
 
-  await database.savePagePerformance(sourcePerformance.operation_id, pagePerformance);
+  await database.savePagePerformance(
+    sourcePerformance.operation_id,
+    pagePerformance,
+  );
 
   return { validPlates, invalidPlates };
 };

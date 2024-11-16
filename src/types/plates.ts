@@ -42,14 +42,14 @@ export type cachePlates = {
   data: Plate[] | undefined;
 };
 export type sources =
-  | "_2020"
-  | "alshamilonline"
-  | "AutoTraders"
-  | "dubai_xplates"
-  | "Dubizzle"
-  | "emiratesauction"
-  | "platesae"
-  | "xplate";
+  | '_2020'
+  | 'alshamilonline'
+  | 'AutoTraders'
+  | 'dubai_xplates'
+  | 'Dubizzle'
+  | 'emiratesauction'
+  | 'platesae'
+  | 'xplate';
 export type ScraperFunction =
   | ((startPage: number, endPage: number, expectedTime: number) => Promise<any>)
   | (() => Promise<any>);

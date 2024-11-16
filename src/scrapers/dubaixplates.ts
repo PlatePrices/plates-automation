@@ -1,18 +1,18 @@
-import * as cheerio from "cheerio";
-import fetch from "node-fetch";
-import { Plate, validAndInvalidPlates } from "../types/plates.js";
-import database from "../Database/db.js";
-import { DUBAI_XPLATES_SELECTORS } from "../config/dubaixplates.config.js";
-import { performanceType } from "../types/performance.js";
-import { validatePlate } from "../validation/zod.js";
-import logger from "../logger/winston.js";
-import { LEVEL } from "../types/logs.js";
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
+import database from '../Database/db.js';
+import { DUBAI_XPLATES_SELECTORS } from '../config/dubaixplates.config.js';
+import { performanceType } from '../types/performance.js';
+import { validatePlate } from '../validation/zod.js';
+import logger from '../logger/winston.js';
+import { LEVEL } from '../types/logs.js';
 
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
 
-const DEFAULT_CONCURRENCY = 5; 
+const DEFAULT_CONCURRENCY = 5;
 const MAX_ERRORS = 5;
 
 const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
@@ -21,7 +21,7 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
   try {
     const response = await fetch(
       DUBAI_XPLATES_SELECTORS.URL,
-      DUBAI_XPLATES_SELECTORS.GET_REQUEST_OPTIONS(pageNumber) as any
+      DUBAI_XPLATES_SELECTORS.GET_REQUEST_OPTIONS(pageNumber) as any,
     );
 
     if (!response.ok) {
@@ -31,7 +31,7 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
     const html = await response.text();
 
     if (html.length === 0) {
-      throw new Error("No HTML returned for page " + pageNumber);
+      throw new Error('No HTML returned for page ' + pageNumber);
     }
 
     const $ = cheerio.load(html);
@@ -53,14 +53,14 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
         .trim();
       const emirate = plateElement
         .find(DUBAI_XPLATES_SELECTORS.PLATE_SOUCE)
-        .attr("src");
+        .attr('src');
       const character = plateElement
         .find(DUBAI_XPLATES_SELECTORS.PLATE_CHARACTER)
         .text()
         .trim();
       const url =
         DUBAI_XPLATES_SELECTORS.SHARABLE_LINK +
-        plateElement.find(DUBAI_XPLATES_SELECTORS.PLATE_URL).attr("href");
+        plateElement.find(DUBAI_XPLATES_SELECTORS.PLATE_URL).attr('href');
 
       const newPlate: Plate = {
         source: DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
@@ -69,10 +69,13 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
         emirate,
         url,
         character,
-        image: "NA",
+        image: 'NA',
       };
 
-      const plateValidation = validatePlate(newPlate, DUBAI_XPLATES_SELECTORS.SOURCE_NAME);
+      const plateValidation = validatePlate(
+        newPlate,
+        DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
+      );
 
       if (!plateValidation.isValid) {
         invalidPlates.push(plateValidation.data);
@@ -92,33 +95,37 @@ const fetchDubaiXplatesPage = async (pageNumber: number): Promise<void> => {
     logger.log(
       DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
       LEVEL.ERROR,
-      `Error fetching data for page ${pageNumber}: ${error}`
+      `Error fetching data for page ${pageNumber}: ${error}`,
     );
-    throw error; 
+    throw error;
   }
 };
 
 export const scrapeDubaiXplates = async (
-  startPage: number, 
+  startPage: number,
   endPage: number,
-  concurrentRequests: number = DEFAULT_CONCURRENCY
+  concurrentRequests: number = DEFAULT_CONCURRENCY,
 ): Promise<validAndInvalidPlates> => {
   const startTime = Date.now();
   let pageNumber = startPage;
   let consecutiveErrors = 0;
-  let shouldContinue =  true;
+  let shouldContinue = true;
   while (shouldContinue && pageNumber <= endPage) {
     try {
-      const pagesToScrape = Array.from({ length: concurrentRequests }, (_, i) => pageNumber + i);
-      
-      await Promise.all(pagesToScrape.map((page) => fetchDubaiXplatesPage(page)));
+      const pagesToScrape = Array.from(
+        { length: concurrentRequests },
+        (_, i) => pageNumber + i,
+      );
 
-      
+      await Promise.all(
+        pagesToScrape.map((page) => fetchDubaiXplatesPage(page)),
+      );
+
       consecutiveErrors = 0;
 
       pageNumber += concurrentRequests;
 
-      if(pageNumber > endPage) {
+      if (pageNumber > endPage) {
         shouldContinue = false;
       }
     } catch (error) {
@@ -126,17 +133,17 @@ export const scrapeDubaiXplates = async (
       logger.log(
         DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
         LEVEL.ERROR,
-        `Error during scraping: ${error}`
+        `Error during scraping: ${error}`,
       );
-      
+
       if (consecutiveErrors >= MAX_ERRORS) {
         logger.log(
           DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
           LEVEL.ERROR,
-          `Stopping due to ${MAX_ERRORS} consecutive errors.`
+          `Stopping due to ${MAX_ERRORS} consecutive errors.`,
         );
         shouldContinue = false;
-        break; 
+        break;
       }
     }
   }
@@ -148,12 +155,12 @@ export const scrapeDubaiXplates = async (
     DUBAI_XPLATES_SELECTORS.SOURCE_NAME,
     new Date(startTime),
     new Date(endTime),
-    totalDurationInMs
+    totalDurationInMs,
   );
 
   await database.savePagePerformance(
     sourcePerformance.operation_id,
-    pagePerformance
+    pagePerformance,
   );
 
   return { validPlates, invalidPlates };

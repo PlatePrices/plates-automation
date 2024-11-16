@@ -1,10 +1,10 @@
-import * as cheerio from "cheerio";
-import fetch from "node-fetch";
-import XPLATES_SELECTORS from "../config/xplates.config.js";
-import { performanceType } from "../types/performance.js";
-import { Plate, validAndInvalidPlates } from "../types/plates.js";
-import { validatePlate } from "../validation/zod.js";
-import database from "../Database/db.js";
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
+import XPLATES_SELECTORS from '../config/xplates.config.js';
+import { performanceType } from '../types/performance.js';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
+import { validatePlate } from '../validation/zod.js';
+import database from '../Database/db.js';
 
 let validPlates: Plate[] = [];
 let invalidPlates: Plate[] = [];
@@ -14,13 +14,13 @@ let shouldContinue = true;
 const fetchXplatePage = async (pageNumber: number) => {
   const pageStartTime = Date.now();
   const response = await fetch(
-    `https://xplate.com/en/numbers/license-plates?page=${pageNumber.toString()}`
+    `https://xplate.com/en/numbers/license-plates?page=${pageNumber.toString()}`,
   );
   const html = await response.text();
   const $ = cheerio.load(html);
 
   if ($(XPLATES_SELECTORS.ERROR_MESSAGE_SELECTOR).length) {
-    shouldContinue = false; 
+    shouldContinue = false;
     return;
   }
   const plates = Array.from($(XPLATES_SELECTORS.ALL_PLATES)).slice(1);
@@ -32,21 +32,21 @@ const fetchXplatePage = async (pageNumber: number) => {
 
   for (const plate of plates) {
     const plateElement = $(plate);
-    const imgSrc = plateElement.find("img").attr("data-src") || "";
+    const imgSrc = plateElement.find('img').attr('data-src') || '';
     const price =
-      plateElement.find(XPLATES_SELECTORS.PLATE_PRICE).text().trim() || "";
+      plateElement.find(XPLATES_SELECTORS.PLATE_PRICE).text().trim() || '';
     const duration =
-      plateElement.find(XPLATES_SELECTORS.PLATE_DURATION).text().trim() || "";
+      plateElement.find(XPLATES_SELECTORS.PLATE_DURATION).text().trim() || '';
     const url =
-      plateElement.find(XPLATES_SELECTORS.PLATE_LINK).attr("href") || "";
+      plateElement.find(XPLATES_SELECTORS.PLATE_LINK).attr('href') || '';
 
     const emirateMatch = url.match(/\/(\d+)-(.+?)-code-/);
     const characterMatch = url.match(/-code-(.+?)-plate-number-/);
     const numberMatch = url.match(/plate-number-(\d+)/);
 
-    const emirate = emirateMatch ? emirateMatch[2] : "";
-    const character = characterMatch ? characterMatch[1] : "";
-    const number = numberMatch ? numberMatch[1] : "";
+    const emirate = emirateMatch ? emirateMatch[2] : '';
+    const character = characterMatch ? characterMatch[1] : '';
+    const number = numberMatch ? numberMatch[1] : '';
 
     const newPlate: Plate = {
       image: imgSrc,
@@ -61,17 +61,17 @@ const fetchXplatePage = async (pageNumber: number) => {
 
     if (
       newPlate.price?.trim() ===
-      XPLATES_SELECTORS.SKIP_CONFIGURATION.CALL_FOR_PRICE ||
+        XPLATES_SELECTORS.SKIP_CONFIGURATION.CALL_FOR_PRICE ||
       newPlate.duration?.trim() ===
-      XPLATES_SELECTORS.SKIP_CONFIGURATION.FEATURED ||
+        XPLATES_SELECTORS.SKIP_CONFIGURATION.FEATURED ||
       newPlate.character?.trim() ===
-      XPLATES_SELECTORS.SKIP_CONFIGURATION.CHARACTER_HAS_NOC
+        XPLATES_SELECTORS.SKIP_CONFIGURATION.CHARACTER_HAS_NOC
     )
       continue;
 
     const plateValidation = validatePlate(
       newPlate,
-      XPLATES_SELECTORS.SOURCE_NAME
+      XPLATES_SELECTORS.SOURCE_NAME,
     );
     if (!plateValidation.isValid) {
       invalidPlates.push(plateValidation.data);
@@ -91,23 +91,21 @@ const fetchXplatePage = async (pageNumber: number) => {
 export const scrapeXplatesPlates = async (
   startPage: number,
   endPage: number,
-  concurrentRequests: number = 5
+  concurrentRequests: number = 5,
 ): Promise<validAndInvalidPlates> => {
   validPlates = [];
   invalidPlates = [];
   const startTime = Date.now();
   let currentPage = startPage;
 
-  console.log(shouldContinue, currentPage <= endPage)
+  console.log(shouldContinue, currentPage <= endPage);
   while (shouldContinue && currentPage <= endPage) {
-
-    console.log('entered')
+    console.log('entered');
     const remainingPages = endPage - currentPage + 1;
     const pagesToScrape = Array.from(
       { length: Math.min(concurrentRequests, remainingPages) },
-      (_, i) => currentPage + i
+      (_, i) => currentPage + i,
     );
-
 
     await Promise.all(pagesToScrape.map((page) => fetchXplatePage(page)));
 
@@ -124,12 +122,12 @@ export const scrapeXplatesPlates = async (
     XPLATES_SELECTORS.SOURCE_NAME,
     new Date(startTime),
     new Date(endTime),
-    totalDurationMs
+    totalDurationMs,
   );
 
   await database.savePagePerformance(
     sourcePerformance.operation_id,
-    pagePerformance
+    pagePerformance,
   );
 
   shouldContinue = true;

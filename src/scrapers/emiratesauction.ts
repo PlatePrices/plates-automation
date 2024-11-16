@@ -1,18 +1,18 @@
-import fetch from "node-fetch";
+import fetch from 'node-fetch';
 
-import { EMIRATES_AUCTION_SELECTORS } from "../config/emiratesauction.config.js";
-import logger from "../logger/winston.js";
-import { emiratesauctionResponseData } from "../types/emiratesauction.js";
-import { performanceType } from "../types/performance.js";
+import { EMIRATES_AUCTION_SELECTORS } from '../config/emiratesauction.config.js';
+import logger from '../logger/winston.js';
+import { emiratesauctionResponseData } from '../types/emiratesauction.js';
+import { performanceType } from '../types/performance.js';
 import {
   NumberOfMatchesForEachEmirate,
   Plate,
   emirates,
   validAndInvalidPlates,
-} from "../types/plates.js";
-import { validatePlate } from "../validation/zod.js";
-import database from "../Database/db.js";
-import { LEVEL } from "../types/logs.js";
+} from '../types/plates.js';
+import { validatePlate } from '../validation/zod.js';
+import database from '../Database/db.js';
+import { LEVEL } from '../types/logs.js';
 export const scrapeEmiratesAuctionPlates =
   async (): Promise<validAndInvalidPlates> => {
     const validPlates: Plate[] = [];
@@ -26,10 +26,10 @@ export const scrapeEmiratesAuctionPlates =
       const pageStartTime = Date.now();
       const validPlatesForEachEmirate: Plate[] = [];
       const config = {
-        method: "POST",
+        method: 'POST',
         headers: {
           ...EMIRATES_AUCTION_SELECTORS.HEADERS,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: EMIRATES_AUCTION_SELECTORS.DATA(emirateId),
       };
@@ -43,21 +43,21 @@ export const scrapeEmiratesAuctionPlates =
 
         const responseData =
           (await response.json()) as emiratesauctionResponseData;
-        const carPlates = responseData["Data"];
+        const carPlates = responseData['Data'];
         for (const carPlate of carPlates) {
-          const url = carPlate["SharingLink"];
-          const number = carPlate["PlateNumber"];
+          const url = carPlate['SharingLink'];
+          const number = carPlate['PlateNumber'];
           const img = await EMIRATES_AUCTION_SELECTORS.extractImage(
-            parseInt(number)
+            parseInt(number),
           );
-          const character = carPlate["PlateCode"];
+          const character = carPlate['PlateCode'];
           const price =
-            carPlate["Currency"] + " " + carPlate["CurrentPriceStr"];
+            carPlate['Currency'] + ' ' + carPlate['CurrentPriceStr'];
 
           const newPlate: Plate = {
             url,
             number: parseInt(number),
-            image: img ? img : "",
+            image: img ? img : '',
             character,
             price,
             emirate: emirateName,
@@ -66,7 +66,7 @@ export const scrapeEmiratesAuctionPlates =
 
           const plateValidation = validatePlate(
             newPlate,
-            EMIRATES_AUCTION_SELECTORS.SOURCE_NAME
+            EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
           );
           if (!plateValidation.isValid) {
             invalidPlates.push(plateValidation.data);
@@ -78,13 +78,13 @@ export const scrapeEmiratesAuctionPlates =
         logger.log(
           EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
           LEVEL.INFO,
-          `${validPlatesForEachEmirate.length.toString()} for each emirate: ${emirateName}`
+          `${validPlatesForEachEmirate.length.toString()} for each emirate: ${emirateName}`,
         );
       } catch (error) {
         logger.log(
           EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
           LEVEL.ERROR,
-          `Error fetching plate data for ${emirateName}, error : ${error}`
+          `Error fetching plate data for ${emirateName}, error : ${error}`,
         );
       } finally {
         const pageEndTime = Date.now();
@@ -105,12 +105,12 @@ export const scrapeEmiratesAuctionPlates =
       EMIRATES_AUCTION_SELECTORS.SOURCE_NAME,
       new Date(startTime),
       new Date(endTime),
-      totalDurationMs
+      totalDurationMs,
     );
 
     await database.savePagePerformance(
       sourcePerformance.operation_id,
-      pagePerformance
+      pagePerformance,
     );
 
     return { validPlates, invalidPlates };

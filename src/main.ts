@@ -15,34 +15,43 @@ import { scrapePlatesAePlates } from './scrapers/plates.js';
 dotenv.config();
 
 const socket = io(SOCKET_SERVER_URL);
+socket.on('connect', () => {
+  console.log('Connected to the socket server');
+});
 
 type scrapeTask = {
-  source: string,
-  startPage: number,
-  endPage: number
+  source: string;
+  startPage: number;
+  endPage: number;
 };
 
 let isScrapingInProgress = false;
 
 socket.on('startScraping', async (task: scrapeTask) => {
-  console.log(`Received task: ${task.source}, pages ${task.startPage} to ${task.endPage}`);
+  console.log(
+    `Received task: ${task.source}, pages ${task.startPage} to ${task.endPage}`,
+  );
   try {
-      if (isScrapingInProgress) {
-          console.log('Scraping already in progress');
-          return;
-      }
+    if (isScrapingInProgress) {
+      console.log('Scraping already in progress');
+      return;
+    }
 
-      isScrapingInProgress = true;
-      await scrapeBySource(task.source, task.startPage, task.endPage);
+    isScrapingInProgress = true;
+    await scrapeBySource(task.source, task.startPage, task.endPage);
   } catch (err) {
-      console.error('Error during scraping:', err);
-      socket.emit('scrapingError', err);
+    console.error('Error during scraping:', err);
+    socket.emit('scrapingError', err);
   } finally {
-      isScrapingInProgress = false;
+    isScrapingInProgress = false;
   }
 });
 
-async function scrapeBySource(source: string, startPage: number, endPage: number) {
+async function scrapeBySource(
+  source: string,
+  startPage: number,
+  endPage: number,
+) {
   try {
     logger.log('main', LEVEL.INFO, `starting scraping for source: ${source}`);
 
@@ -52,35 +61,61 @@ async function scrapeBySource(source: string, startPage: number, endPage: number
 
     switch (source) {
       case 'xplate':
-        ({ validPlates, invalidPlates } = await scrapeXplatesPlates(startPage, endPage));
+        ({ validPlates, invalidPlates } = await scrapeXplatesPlates(
+          startPage,
+          endPage,
+        ));
         break;
       case 'Dubizzle':
-        ({ validPlates, invalidPlates } = await scrapeDubizzlePlates(startPage, endPage));
+        ({ validPlates, invalidPlates } = await scrapeDubizzlePlates(
+          startPage,
+          endPage,
+        ));
         break;
       case 'alshamilonline':
-        ({ validPlates, invalidPlates } = await scrapeAlShamilPlates(startPage, endPage));
+        ({ validPlates, invalidPlates } = await scrapeAlShamilPlates(
+          startPage,
+          endPage,
+        ));
         break;
       case 'dubai_xplates':
-        ({ validPlates, invalidPlates } = await scrapeDubaiXplates(startPage, endPage));
+        ({ validPlates, invalidPlates } = await scrapeDubaiXplates(
+          startPage,
+          endPage,
+        ));
         break;
       case 'AutoTraders':
-        ({ validPlates, invalidPlates } = await scrapeAutoTradersPlates(startPage, endPage));
+        ({ validPlates, invalidPlates } = await scrapeAutoTradersPlates(
+          startPage,
+          endPage,
+        ));
         break;
       case 'platesae':
-        ({ validPlates, invalidPlates } = await scrapePlatesAePlates(startPage, endPage));
+        ({ validPlates, invalidPlates } = await scrapePlatesAePlates(
+          startPage,
+          endPage,
+        ));
         break;
       case 'numbersAe':
-        ({ validPlates, invalidPlates } = await scrapeNumbersAePlates(startPage, endPage));
+        ({ validPlates, invalidPlates } = await scrapeNumbersAePlates(
+          startPage,
+          endPage,
+        ));
         break;
       default:
         throw new Error(`Unknown source: ${source}`);
     }
 
     if (validPlates.length > 0) await database.addValidPlates(validPlates);
-    if (invalidPlates.length > 0) await database.addInvalidPlates(invalidPlates);
+    if (invalidPlates.length > 0)
+      await database.addInvalidPlates(invalidPlates);
 
     const totalDurationMs = Date.now() - startPage;
-    await database.saveMainOperationPerformance(new Date(), new Date(), totalDurationMs);
+    await database.saveMainOperationPerformance(
+      new Date(),
+      new Date(),
+      totalDurationMs,
+    );
 
     logger.log('main', LEVEL.INFO, `Finished scraping for source: ${source}`);
     socket.emit('scrapingComplete', { validPlates, invalidPlates });

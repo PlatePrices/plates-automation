@@ -1,13 +1,13 @@
-import * as cheerio from "cheerio";
-import fetch from "node-fetch";
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
 
-import { NUMBERS_AE_SELECTORS } from "../config/numberAe.config.js";
-import logger from "../logger/winston.js";
-import { performanceType } from "../types/performance.js";
-import { Plate, validAndInvalidPlates } from "../types/plates.js";
-import { validatePlate } from "../validation/zod.js";
-import database from "../Database/db.js";
-import { LEVEL } from "../types/logs.js";
+import { NUMBERS_AE_SELECTORS } from '../config/numberAe.config.js';
+import logger from '../logger/winston.js';
+import { performanceType } from '../types/performance.js';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
+import { validatePlate } from '../validation/zod.js';
+import database from '../Database/db.js';
+import { LEVEL } from '../types/logs.js';
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
@@ -15,7 +15,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
 
   try {
     const response = await fetch(NUMBERS_AE_SELECTORS.URL(pageNumber), {
-      method: "GET",
+      method: 'GET',
       headers,
     });
     const html = await response.text();
@@ -26,17 +26,17 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
     const validPlates = plates.map((plate) => {
       const plateElement = $(plate);
       const price =
-        plateElement.find(NUMBERS_AE_SELECTORS.PRICE).text().trim() || "";
+        plateElement.find(NUMBERS_AE_SELECTORS.PRICE).text().trim() || '';
       const link =
-        plateElement.find(NUMBERS_AE_SELECTORS.LINK).attr("href") || "";
-      const img = plateElement.find("img").attr("src") || "";
-      const altText = plateElement.find("img").attr("alt") || "";
+        plateElement.find(NUMBERS_AE_SELECTORS.LINK).attr('href') || '';
+      const img = plateElement.find('img').attr('src') || '';
+      const altText = plateElement.find('img').attr('alt') || '';
 
       const afterPlateNumber = altText
-        .split("Plate number")[1]
+        .split('Plate number')[1]
         .trim()
-        .split("for sale")[0]
-        .split(" ");
+        .split('for sale')[0]
+        .split(' ');
 
       const plateNumber =
         afterPlateNumber.length > 2
@@ -44,10 +44,10 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
           : afterPlateNumber[0].trim();
 
       const character =
-        afterPlateNumber.length > 2 ? afterPlateNumber[0].trim() : "";
+        afterPlateNumber.length > 2 ? afterPlateNumber[0].trim() : '';
 
-      const duration = plateElement.find(".posted").text().trim();
-      const emirate = altText.split("Plate")[0].trim();
+      const duration = plateElement.find('.posted').text().trim();
+      const emirate = altText.split('Plate')[0].trim();
 
       const newPlate: Plate = {
         image: NUMBERS_AE_SELECTORS.SHARABLE_LINK + img,
@@ -62,7 +62,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
 
       const plateValidation = validatePlate(
         newPlate,
-        NUMBERS_AE_SELECTORS.SOURCE_NAME
+        NUMBERS_AE_SELECTORS.SOURCE_NAME,
       );
       if (!plateValidation.isValid) {
         invalidPlates.push(plateValidation.data);
@@ -76,7 +76,7 @@ const fetchPage = async (pageNumber: number): Promise<Plate[]> => {
     logger.log(
       NUMBERS_AE_SELECTORS.SOURCE_NAME,
       LEVEL.ERROR,
-      `Error fetching page ${pageNumber.toString()}: ${error}`
+      `Error fetching page ${pageNumber.toString()}: ${error}`,
     );
     return [];
   }
@@ -121,8 +121,8 @@ export const scrapeNumbersAePlates = async (
       validPlates.some(
         (plate) =>
           plate.character === newPlate.character &&
-          plate.number === newPlate.number
-      )
+          plate.number === newPlate.number,
+      ),
     );
 
     if (!allExist) {
@@ -132,9 +132,9 @@ export const scrapeNumbersAePlates = async (
             !validPlates.some(
               (plate) =>
                 plate.character === newPlate.character &&
-                plate.number === newPlate.number
-            )
-        )
+                plate.number === newPlate.number,
+            ),
+        ),
       );
     } else {
       stop = true;
@@ -148,12 +148,12 @@ export const scrapeNumbersAePlates = async (
     NUMBERS_AE_SELECTORS.SOURCE_NAME,
     new Date(startTime),
     new Date(endTime),
-    totalDurationMs
+    totalDurationMs,
   );
 
   await database.savePagePerformance(
     sourcePerformance.operation_id,
-    pagePerformance
+    pagePerformance,
   );
   return { validPlates, invalidPlates };
 };

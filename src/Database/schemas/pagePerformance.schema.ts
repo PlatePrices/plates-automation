@@ -8,7 +8,7 @@ const PagePerformance = sequalize.define(
       type: DataTypes.INTEGER,
       autoIncrement: true,
       allowNull: false,
-      primaryKey: true
+      primaryKey: true,
     },
     operation_id: {
       type: DataTypes.INTEGER,
