@@ -8,7 +8,7 @@ const MainOperationPerformance = sequalize.define(
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
-      allowNull: false
+      allowNull: false,
     },
     startTime: {
       type: DataTypes.DATE,

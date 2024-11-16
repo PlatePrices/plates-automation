@@ -1,12 +1,12 @@
-import fetch from "node-fetch";
-import { CONFIG, DUBIZZLE_SELECTORS } from "../config/dubizzle.config.js";
-import logger from "../logger/winston.js";
-import { DubizzleResponseData } from "../types/dubizzle.js";
-import { performanceType } from "../types/performance.js";
-import { Plate, validAndInvalidPlates } from "../types/plates.js";
-import { validatePlate } from "../validation/zod.js";
-import database from "../Database/db.js";
-import { LEVEL } from "../types/logs.js";
+import fetch from 'node-fetch';
+import { CONFIG, DUBIZZLE_SELECTORS } from '../config/dubizzle.config.js';
+import logger from '../logger/winston.js';
+import { DubizzleResponseData } from '../types/dubizzle.js';
+import { performanceType } from '../types/performance.js';
+import { Plate, validAndInvalidPlates } from '../types/plates.js';
+import { validatePlate } from '../validation/zod.js';
+import database from '../Database/db.js';
+import { LEVEL } from '../types/logs.js';
 const validPlates: Plate[] = [];
 const invalidPlates: Plate[] = [];
 const pagePerformance: performanceType[] = [];
@@ -23,24 +23,24 @@ const fetchDubizzlePage = async (pageNumber: number): Promise<void> => {
     }
 
     const responseData = (await response.json()) as DubizzleResponseData;
-    const carPlates = responseData["results"][0]["hits"];
+    const carPlates = responseData['results'][0]['hits'];
 
     if (carPlates.length === 0) {
-      throw new Error("No plates found on page");
+      throw new Error('No plates found on page');
     }
 
     for (const plate of carPlates) {
-      const price = plate["price"];
-      const number = Number(plate["details"]["Plate number"]["ar"]["value"]);
-      const url = plate["absolute_url"]["ar"];
-      const image = plate["photos"]["main"];
-      const emirate = plate["site"]["en"];
-      let character = plate["details"]["Plate code"]
-        ? plate["details"]["Plate code"]["ar"]["value"]
-        : "";
+      const price = plate['price'];
+      const number = Number(plate['details']['Plate number']['ar']['value']);
+      const url = plate['absolute_url']['ar'];
+      const image = plate['photos']['main'];
+      const emirate = plate['site']['en'];
+      let character = plate['details']['Plate code']
+        ? plate['details']['Plate code']['ar']['value']
+        : '';
 
       if (character.length > 3) {
-        character = "";
+        character = '';
       }
 
       const newPlate: Plate = {
@@ -55,7 +55,7 @@ const fetchDubizzlePage = async (pageNumber: number): Promise<void> => {
 
       const plateValidation = validatePlate(
         newPlate,
-        DUBIZZLE_SELECTORS.SOURCE_NAME
+        DUBIZZLE_SELECTORS.SOURCE_NAME,
       );
       if (!plateValidation.isValid) {
         invalidPlates.push(plateValidation.data);
@@ -75,7 +75,7 @@ const fetchDubizzlePage = async (pageNumber: number): Promise<void> => {
     logger.log(
       DUBIZZLE_SELECTORS.SOURCE_NAME,
       LEVEL.ERROR,
-      `Error fetching data for page ${pageNumber}: ${error}`
+      `Error fetching data for page ${pageNumber}: ${error}`,
     );
     throw error;
   }
@@ -84,7 +84,7 @@ const fetchDubizzlePage = async (pageNumber: number): Promise<void> => {
 export const scrapeDubizzlePlates = async (
   startPage: number,
   endPage: number,
-  concurrentRequests: number = DEFAULT_CONCURRENCY
+  concurrentRequests: number = DEFAULT_CONCURRENCY,
 ): Promise<validAndInvalidPlates> => {
   let currentPage = startPage;
   let consecutiveErrors = 0;
@@ -95,14 +95,14 @@ export const scrapeDubizzlePlates = async (
     try {
       const pagesToScrape = Array.from(
         { length: concurrentRequests },
-        (_, i) => currentPage + i
+        (_, i) => currentPage + i,
       );
 
       await Promise.all(
-        pagesToScrape.map((pageNumber) => fetchDubizzlePage(pageNumber))
+        pagesToScrape.map((pageNumber) => fetchDubizzlePage(pageNumber)),
       );
 
-      console.log("Scraped pages:", pagesToScrape);
+      console.log('Scraped pages:', pagesToScrape);
 
       consecutiveErrors = 0;
 
@@ -117,7 +117,7 @@ export const scrapeDubizzlePlates = async (
         logger.log(
           DUBIZZLE_SELECTORS.SOURCE_NAME,
           LEVEL.ERROR,
-          `Stopping due to ${MAX_ERRORS} consecutive errors.`
+          `Stopping due to ${MAX_ERRORS} consecutive errors.`,
         );
         shouldContinue = false;
       }
@@ -131,12 +131,12 @@ export const scrapeDubizzlePlates = async (
     DUBIZZLE_SELECTORS.SOURCE_NAME,
     new Date(startTime),
     new Date(endTime),
-    totalDurationMs
+    totalDurationMs,
   );
 
   await database.savePagePerformance(
     sourcePerformance.operation_id,
-    pagePerformance
+    pagePerformance,
   );
 
   return { validPlates, invalidPlates };

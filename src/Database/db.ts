@@ -25,7 +25,11 @@ class Database {
   public async addInvalidPlates(plates: any[]): Promise<void> {
     await InvalidPlate.bulkCreate(plates);
   }
-  public async saveMainOperationPerformance(startTime: Date, endTime: Date, totalDurationMs: number): Promise<void> {
+  public async saveMainOperationPerformance(
+    startTime: Date,
+    endTime: Date,
+    totalDurationMs: number,
+  ): Promise<void> {
     await MainOperationPerformance.create({
       startTime: startTime,
       endTime: endTime,
@@ -50,7 +54,10 @@ class Database {
     };
   }
 
-  public async savePagePerformance(operation_id: number, pagesPerformance: performanceType[]): Promise<void> {
+  public async savePagePerformance(
+    operation_id: number,
+    pagesPerformance: performanceType[],
+  ): Promise<void> {
     const pagesRecords = pagesPerformance.map((performance) => ({
       operation_id,
       page_number: performance.pageNumber,
@@ -60,7 +67,12 @@ class Database {
     await PagePerformance.bulkCreate(pagesRecords);
   }
 
-  public async saveLogs(source: string, timestamp: Date, level: string, message: string) {
+  public async saveLogs(
+    source: string,
+    timestamp: Date,
+    level: string,
+    message: string,
+  ) {
     await logs.create({
       source: source,
       timestamp: timestamp,
