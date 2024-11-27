@@ -1,3 +1,4 @@
+import { SOURCE } from '../config.js';
 import { getPlatesResponse } from '../requests/plates.request.js';
 import { plateSchema, PlateSchematype } from '../schemas/plates.schema.js';
 import { DubizzleResponseDataType } from '../types.js';
@@ -30,7 +31,7 @@ export const getPlates = async (startPage: number, endPage: number) => {
         character,
         image,
         emirate,
-        source: 'dubizzle',
+        source: SOURCE,
       };
 
       const result = plateSchema.safeParse(newPlate);

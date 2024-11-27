@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { BasePlateSchema } from '../../../plate-utils/schemas/plates.schema';
+import { BasePlateSchema } from '../../../plate-utils/validation/plates.schema';
 
 export const plateSchema = BasePlateSchema.extend({
   image: z.string(),

@@ -1,57 +1,55 @@
-import { RequestyBody, Body } from './types';
+import { z } from 'zod';
 
-export default class plateNode {
-  body: Body;
-  constructor({ body }: RequestyBody) {
-    this.body = body;
-  }
-  public addPlates(plates: unknown[]): void {
-    throw new Error('Method not implemented');
-  }
+import logger from '../logger/logger.js';
+import { BasePlateSchemaType } from '../validation/plates.schema';
+import { validationResult } from '../../type';
 
-  public addInvalidPlates(plates: unknown[]): void {
-    throw new Error('Method not implemented');
-  }
-
-  public getPlates(
-    source: string,
-    startPage: number,
-    endPage: number,
-  ): unknown[] {
-    throw new Error('Method not implemented');
-  }
-
-  public validatePlates(plates: unknown[]): {
-    validPlates: unknown[];
-    invalidPlates: unknown[];
+export default abstract class plateNode {
+  public plates!: BasePlateSchemaType[];
+  protected validatePlates(
+    plates: BasePlateSchemaType[],
+    schema: z.ZodTypeAny,
+  ): {
+    validPlates: BasePlateSchemaType[];
+    invalidPlates: validationResult;
   } {
-    throw new Error('Method not implemented');
-  }
+    if (!schema) {
+      logger.error('No schema for validation has been found');
+    }
 
-  public parsePlates(): unknown[] {
-    throw new Error('Method not implemented');
-  }
+    const validPlates: BasePlateSchemaType[] = [];
+    const invalidPlates: validationResult = { plates: [], errors: [] };
 
-  public savePagePerformance(
+    for (const plate of plates) {
+      const validationResult = schema.safeParse(plate);
+
+      if (validationResult.success) {
+        validPlates.push(validationResult.data);
+      } else {
+        invalidPlates.plates.push(plate);
+        invalidPlates.errors.push(validationResult.error);
+      }
+    }
+
+    return { validPlates, invalidPlates };
+  }
+  protected abstract parsePlates(
+    pageNumber: number,
+  ): Promise<cheerio.Root | object>;
+
+  protected abstract extractPlates(
     startPage: number,
     endPage: number,
-    totalTimeTaken: number,
-  ) {
-    throw new Error('Method not implemented');
-  }
-  public saveSourcePerformance(source: string, totalTimeTaken: number) {
-    throw new Error('Method not implemented');
+  ): Promise<void>;
+
+  public getPlates() {
+    return this.plates;
   }
 
-  private arePlatesCached(source: string, plates: unknown[]): boolean {
-    throw new Error('Method not implemented');
-  }
+  // public arePlatesCached(source: string, plates: unknown[]): boolean {
+  //   return false;
+  // }
 
-  protected setPlatesToCache(source: string, plates: unknown[]) {
-    throw new Error('Method not implemented');
-  }
-
-  protected getPlatesFromCache(source: string) {
-    throw new Error('Method not implemented');
-  }
+  // public setPlatesToCache(source: string, plates: unknown[]): void {}
+  // public getPlatesFromCache(source: string): void {}
 }

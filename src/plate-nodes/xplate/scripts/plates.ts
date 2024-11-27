@@ -40,7 +40,7 @@ export const getPlates = async (startPage: number, endPage: number) => {
         price: price,
         duration: duration,
         emirate: emirate,
-        source: 'xplate',
+        source: SELECTORS.SOURCE,
         number: number,
         character: character,
         url: url,

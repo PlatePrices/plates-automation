@@ -10,7 +10,7 @@ export const getRequestConfig = (pageNumber: number) => {
     ],
   });
 
-  let config = {
+  const config = {
     method: 'post',
     maxBodyLength: Infinity,
     url: 'https://wd0ptz13zs-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(4.11.0);%20Browser%20(lite)&x-algolia-api-key=cef139620248f1bc328a00fddc7107a6&x-algolia-application-id=WD0PTZ13ZS',
@@ -32,3 +32,5 @@ export const getRequestConfig = (pageNumber: number) => {
 
   return config;
 };
+
+export const SOURCE = 'DUBIZZLE';

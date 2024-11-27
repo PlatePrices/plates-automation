@@ -30,4 +30,5 @@ export const SELECTORS = {
   PRICE: 'span[class="custom-red dm-white"]',
   DURATION: 'div[class="d-flex align-items-center meta"] > div:not([class])',
   LINK: 'div.post.post-grid.rounded.bordered.p-1.h-100.dm-bordered > div > a',
+  SOURCE: 'XPLATE',
 };

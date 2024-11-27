@@ -39,4 +39,5 @@ export const SELECTORS = {
   PLATE_EXCEPTION_SELECTOR: 'img[class="img-fluid"]',
   PLATE_CHARACTER: 'div > div > div > div:nth-child(1) > h1',
   PLATE_URL: 'a[class="btn btn-info"]',
+  SOURCE: 'DUBAI-XPLATE',
 };

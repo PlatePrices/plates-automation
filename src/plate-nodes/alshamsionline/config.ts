@@ -35,4 +35,5 @@ export const SELECTORS = {
   PLATE_LINK: 'a',
   IMAGE: 'a > img[class="post_imgs lazy"]',
   DATE: '.category-traderName .cat_udate',
+  SOURCE: 'ALSHAMSIONLINE',
 };
