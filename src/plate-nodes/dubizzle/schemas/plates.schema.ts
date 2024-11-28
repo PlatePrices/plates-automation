@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { BasePlateSchema } from '../../../plate-utils/validation/plates.schema';
 
 export const plateSchema = BasePlateSchema.extend({

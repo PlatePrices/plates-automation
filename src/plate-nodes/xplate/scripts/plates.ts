@@ -1,13 +1,15 @@
-import { getPlatesResponse } from '../requests/plate.request';
 import * as cheerio from 'cheerio';
-import { plateSchema, PlateSchematype } from '../schemas/plate.schema';
+
 import { SELECTORS } from '../config.js';
+import { getPlatesResponse } from '../requests/plate.request';
+import { plateSchema, PlateSchematype } from '../schemas/plate.schema';
+
 export const getPlates = async (startPage: number, endPage: number) => {
   const Plates: PlateSchematype[] = [];
   for (let pageNumber = startPage; pageNumber <= endPage; pageNumber++) {
     const response = await getPlatesResponse(pageNumber);
 
-    const html: string = await response.platesResponse.data;
+    const html: string = (await response.platesResponse.data) as string;
 
     const $ = cheerio.load(html);
     if ($(SELECTORS.WARNING_MESSAGE).length) {

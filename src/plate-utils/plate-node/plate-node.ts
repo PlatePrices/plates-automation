@@ -1,22 +1,17 @@
 import { z } from 'zod';
 
-import logger from '../logger/logger.js';
+import { validationResult } from '../../type.js';
 import { BasePlateSchemaType } from '../validation/plates.schema';
-import { validationResult } from '../../type';
 
 export default abstract class plateNode {
   public plates!: BasePlateSchemaType[];
   protected validatePlates(
     plates: BasePlateSchemaType[],
-    schema: z.ZodTypeAny,
+    schema: z.ZodType<BasePlateSchemaType>,
   ): {
     validPlates: BasePlateSchemaType[];
     invalidPlates: validationResult;
   } {
-    if (!schema) {
-      logger.error('No schema for validation has been found');
-    }
-
     const validPlates: BasePlateSchemaType[] = [];
     const invalidPlates: validationResult = { plates: [], errors: [] };
 

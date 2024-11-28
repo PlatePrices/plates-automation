@@ -1,9 +1,8 @@
 import dotenv from 'dotenv';
 import env from 'env-var';
+import { Sequelize } from 'sequelize';
 
 import Alshamsionline from './plate-nodes/alshamsionline/scripts/plates.js';
-
-import { Sequelize } from 'sequelize';
 
 dotenv.config();
 

@@ -1,17 +1,18 @@
 import * as cheerion from 'cheerio';
 
-import { getPlatesResponse } from '../requests/plates.requests.js';
-
-import { plateSchema, PlateSchematype } from '../schemas/plates.schema.js';
 import { SELECTORS } from '../config.js';
+import { getPlatesResponse } from '../requests/plates.requests.js';
+import { plateSchema, PlateSchematype } from '../schemas/plates.schema.js';
+
 export const getPlates = async (startPage: number, endPage: number) => {
   const Plates: PlateSchematype[] = [];
   for (let pageNumber = startPage; pageNumber <= endPage; pageNumber++) {
     const { platesResponse } = await getPlatesResponse(pageNumber);
 
-    const html = await platesResponse.data;
+    const html = (await platesResponse.data) as string;
 
-    if (!html) throw new Error(`No HTML returned for page : ${pageNumber}`);
+    if (!html)
+      throw new Error(`No HTML returned for page : ${pageNumber.toString()}`);
 
     const $ = cheerion.load(html);
 
@@ -27,9 +28,10 @@ export const getPlates = async (startPage: number, endPage: number) => {
       const emirate = plateElement.find(SELECTORS.PLATE_SOUCE).text();
       const character = plateElement.find(SELECTORS.PLATE_CHARACTER).text();
 
-      const url =
-        SELECTORS.SHARABLE_LINK +
-        plateElement.find(SELECTORS.PLATE_URL).attr('href');
+      const href = plateElement
+        .find(SELECTORS.PLATE_URL)
+        .attr('href') as string;
+      const url = SELECTORS.SHARABLE_LINK.concat(href);
 
       const newPlate: PlateSchematype = {
         source: 'dubaixplate',

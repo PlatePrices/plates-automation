@@ -2,7 +2,7 @@ export const getRequestConfig = (pageNumber: number) => {
   const config = {
     method: 'get',
     maxBodyLength: Infinity,
-    url: `https://www.numbers.ae/plate/index?page=2&per-page=${pageNumber}`,
+    url: `https://www.numbers.ae/plate/index?page=2&per-page=${pageNumber.toString()}`,
     headers: {
       Accept: 'text/html, */*; q=0.01',
       'Accept-Language': 'en-US,en;q=0.5',

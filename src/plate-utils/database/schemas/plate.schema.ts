@@ -1,5 +1,7 @@
 import { DataTypes } from 'sequelize';
-import { sequalize } from '../../../config';
+
+import { sequalize } from '../../../config.js';
+
 const plateAttributes = {
   id: {
     type: DataTypes.INTEGER,

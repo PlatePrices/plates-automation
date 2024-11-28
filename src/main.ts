@@ -1,4 +1,4 @@
-import { SOURCES_MAP } from './config';
+import { SOURCES_MAP } from './config.js';
 
 export const runTask = async (
   source: string,
@@ -13,4 +13,7 @@ export const runTask = async (
 
   // should be recieving plates
   // await taskFunction(startPage, endPage);
+
+  // this is only a placeholder
+  console.log(startPage, endPage);
 };

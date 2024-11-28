@@ -1,19 +1,19 @@
 import * as cheerio from 'cheerio';
 
+import database from '../../../plate-utils/database/database.js';
+import plateNode from '../../../plate-utils/plate-node/plate-node.js';
+import { SELECTORS } from '../config.js';
 import { getPlatesResponse } from '../requests/plates.requests';
-import { SELECTORS } from '../config';
 import { plateSchema, PlateSchematype } from '../schemas/plates.schema';
-import plateNode from '../../../plate-utils/plate-node/plate-node';
-import { RequestyBody } from '../../../plate-utils/plate-node/types';
-import database from '../../../plate-utils/database/database';
-import { BasePlateSchemaType } from '../../../plate-utils/validation/plates.schema';
+
 class Alshamsionline extends plateNode {
   public async parsePlates(pageNumber: number) {
     const { platesResponse } = await getPlatesResponse(pageNumber);
 
-    const html = await platesResponse.data;
+    const html = (await platesResponse.data) as string;
 
-    if (!html) throw new Error(`No html returned for page : ${pageNumber}`);
+    if (!html)
+      throw new Error(`No html returned for page : ${pageNumber.toString()}`);
 
     return cheerio.load(html);
   }

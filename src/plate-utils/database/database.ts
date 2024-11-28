@@ -1,6 +1,7 @@
 import { sequalize } from '../../config.js';
 import logger from '../logger/logger.js';
 import { BasePlateSchemaType } from '../validation/plates.schema.js';
+
 import { InvalidPlate, ValidPlates } from './schemas/plate.schema.js';
 
 class Database {

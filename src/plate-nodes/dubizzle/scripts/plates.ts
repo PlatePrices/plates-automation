@@ -22,7 +22,7 @@ export const getPlates = async (startPage: number, endPage: number) => {
       const url = plate['absolute_url']['ar'];
       const image = plate['photos']['main'];
       const emirate = plate['site']['en'];
-      const character = plate?.details?.['Plate code']?.ar?.value ?? 'N/A';
+      const character = plate.details['Plate code']?.ar.value ?? 'N/A';
 
       const newPlate: PlateSchematype = {
         url,
