@@ -16,3 +16,8 @@ export type validationResult = {
   plates: BasePlateSchemaType[];
   errors: z.ZodError[];
 };
+
+export type ALL_PLATES_TYPE = {
+  validPlates: BasePlateSchemaType[];
+  invalidPlates: BasePlateSchemaType[];
+};

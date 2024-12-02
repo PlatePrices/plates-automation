@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { validationResult } from '../../type.js';
+import { ALL_PLATES_TYPE, validationResult } from '../../type.js';
 import { BasePlateSchemaType } from '../validation/plates.schema';
 
 export default abstract class plateNode {
@@ -30,12 +30,12 @@ export default abstract class plateNode {
   }
   protected abstract parsePlates(
     pageNumber: number,
-  ): Promise<cheerio.Root | object>;
+  ): Promise<cheerio.Root | object | null>;
 
   protected abstract extractPlates(
     startPage: number,
     endPage: number,
-  ): Promise<void>;
+  ): Promise<ALL_PLATES_TYPE>;
 
   public getPlates() {
     return this.plates;

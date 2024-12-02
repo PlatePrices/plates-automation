@@ -1,19 +1,31 @@
-import { SOURCES_MAP } from './config.js';
+import dubaiXplate from './plate-nodes/dubaixplates/scripts/plates.js';
+import dubizzle from './plate-nodes/dubizzle/scripts/plates.js';
+import xplate from './plate-nodes/xplate/scripts/plates.js';
+import logger from './plate-utils/logger/logger.js';
 
-export const runTask = async (
-  source: string,
-  startPage: number,
-  endPage: number,
-) => {
-  if (!SOURCES_MAP.has(source)) return Promise.resolve();
+void (async () => {
+  try {
+    const allPlates = await Promise.all([
+      xplate.extractPlates(1, 10),
+      dubizzle.extractPlates(1, 10),
+      dubaiXplate.extractPlates(1, 10),
+    ]);
 
-  const taskFunction = SOURCES_MAP.get(source);
+    // const plates = await alshamsionline.extractPlates(1, 10);
 
-  if (!taskFunction) return Promise.resolve();
+    let validCounter: number = 0;
+    let invalidCounter: number = 0;
 
-  // should be recieving plates
-  // await taskFunction(startPage, endPage);
+    for (const groupPlate of allPlates) {
+      validCounter += groupPlate.validPlates.length;
+      invalidCounter += groupPlate.invalidPlates.length;
+    }
 
-  // this is only a placeholder
-  console.log(startPage, endPage);
-};
+    logger.debub('this is the counter of valid plates : ', validCounter);
+    logger.debub('this is the counter of invalid plates : ', invalidCounter);
+  } catch (error) {
+    logger.error('Error in xplate.extractPlates:', error);
+
+    console.log('this is the error : ', error);
+  }
+})();

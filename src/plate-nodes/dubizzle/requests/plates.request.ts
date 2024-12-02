@@ -1,9 +1,10 @@
 import axios from 'axios';
 
-import { getRequestConfig } from '../config.js';
+import { createDubizzleConfig } from '../config.js';
 
 export const getPlatesResponse = async (pageNumber: number) => {
+  const config = createDubizzleConfig(pageNumber);
   return {
-    platesResponse: await axios.request(getRequestConfig(pageNumber)),
+    platesResponse: await axios(config),
   };
 };

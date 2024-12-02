@@ -1,13 +1,12 @@
 import * as cheerio from 'cheerio';
 
-import database from '../../../plate-utils/database/database.js';
 import plateNode from '../../../plate-utils/plate-node/plate-node.js';
 import { SELECTORS } from '../config.js';
-import { getPlatesResponse } from '../requests/plates.requests';
-import { plateSchema, PlateSchematype } from '../schemas/plates.schema';
+import { getPlatesResponse } from '../requests/plates.requests.js';
+import { plateSchema, PlateSchematype } from '../schemas/plates.schema.js';
 
 class Alshamsionline extends plateNode {
-  public async parsePlates(pageNumber: number) {
+  async parsePlates(pageNumber: number): Promise<cheerio.Root | null> {
     const { platesResponse } = await getPlatesResponse(pageNumber);
 
     const html = (await platesResponse.data) as string;
@@ -18,24 +17,32 @@ class Alshamsionline extends plateNode {
     return cheerio.load(html);
   }
 
-  public async extractPlates(
-    startPage: number,
-    endPage: number,
-  ): Promise<void> {
+  async extractPlates(startPage: number, endPage: number) {
     const Plates: PlateSchematype[] = [];
-    for (
-      let pageNumber: number = startPage;
-      pageNumber <= endPage;
-      pageNumber++
-    ) {
-      const $ = await this.parsePlates(pageNumber);
+
+    const pageNumbers = Array.from(
+      { length: endPage - startPage + 1 },
+      (_, i) => startPage + i,
+    );
+
+    const pageResults = await Promise.all(
+      pageNumbers.map((pageNumber) =>
+        this.parsePlates(pageNumber).catch((err: unknown) => {
+          console.error(`Failed to fetch page ${pageNumber.toString()}:`, err);
+          return null;
+        }),
+      ),
+    );
+
+    for (const $ of pageResults) {
+      if (!$) continue;
 
       const plates = Array.from($(SELECTORS.ALL_PLATES));
 
-      if (plates.length === 0) return;
+      if (plates.length === 0) continue;
 
       for (const plate of plates) {
-        const plateElement = $(plate);
+        const plateElement = $($(plate));
         const linkElement = plateElement.find(SELECTORS.PLATE_LINK);
         const isSold = linkElement.find('button').text().trim() || '';
         if (isSold === 'Sold' || isSold === 'Booked') continue;
@@ -88,7 +95,8 @@ class Alshamsionline extends plateNode {
       plateSchema,
     );
     this.plates = validPlates;
-    await database.addPlates(validPlates, invalidPlates.plates);
+
+    return { validPlates: validPlates, invalidPlates: invalidPlates.plates };
   }
 }
 

@@ -41,6 +41,7 @@
     "build": "tsc",
     "test": "echo \"Error: oops, the actor has no tests yet, sad!\" && exit 1",
     "lint": "eslint '**/*.ts'",
+    "lint:fix": "eslint '**/*.ts' --fix",
     "format": "prettier --write \"src/**/*.ts\""
   },
   "author": "It's not you it's me",

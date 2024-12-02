@@ -1,16 +1,14 @@
-import database from '../../../plate-utils/database/database.js';
+import logger from '../../../plate-utils/logger/logger.js';
 import plateNode from '../../../plate-utils/plate-node/plate-node.js';
+import { ALL_PLATES_TYPE } from '../../../type.js';
 import { SOURCE } from '../config.js';
 import { getPlatesResponse } from '../requests/plates.request.js';
 import { plateSchema, PlateSchematype } from '../schemas/plates.schema.js';
 import { DubizzleResponseDataType } from '../types.js';
 
 class Plates extends plateNode {
-  public async parsePlates(pageNumber: number): Promise<cheerio.Root | object> {
+  public async parsePlates(pageNumber: number): Promise<object | null> {
     const { platesResponse } = await getPlatesResponse(pageNumber);
-
-    if (platesResponse.status >= 200 && platesResponse.status < 300)
-      throw new Error('Error in parsing');
 
     const platesObject = platesResponse.data as DubizzleResponseDataType;
 
@@ -20,21 +18,33 @@ class Plates extends plateNode {
   public async extractPlates(
     startPage: number,
     endPage: number,
-  ): Promise<void> {
+  ): Promise<ALL_PLATES_TYPE> {
     const Plates: PlateSchematype[] = [];
 
-    for (
-      let pageNumber: number = startPage;
-      pageNumber <= endPage;
-      pageNumber++
-    ) {
-      const platesObject = (await this.parsePlates(
-        pageNumber,
-      )) as DubizzleResponseDataType;
-      const plates = platesObject['results'][0]['hits'];
+    const pageNumbers = Array.from(
+      { length: endPage - startPage + 1 },
+      (_, i) => startPage + i,
+    );
 
+    const pageResults = await Promise.all(
+      pageNumbers.map((pageNumber) =>
+        this.parsePlates(pageNumber).catch((err: unknown) => {
+          logger.error(
+            `Error processing page ${pageNumber.toString()} : `,
+            err,
+          );
+          return null;
+        }),
+      ),
+    );
+
+    for (const platesObject of pageResults) {
+      if (!platesObject) continue;
+
+      const plates = (platesObject as DubizzleResponseDataType)['results'][0][
+        'hits'
+      ];
       if (plates.length === 0) throw new Error('No Plates found on page');
-
       for (const plate of plates) {
         const price = plate['price'];
         const number = plate['details']['Plate number']['ar']['value'];
@@ -46,7 +56,7 @@ class Plates extends plateNode {
         const newPlate: PlateSchematype = {
           url,
           price: String(price),
-          number,
+          number: number.toString(),
           character,
           image,
           emirate,
@@ -60,8 +70,10 @@ class Plates extends plateNode {
       Plates,
       plateSchema,
     );
-    this.plates = validPlates;
-    await database.addPlates(validPlates, invalidPlates.plates);
+
+    console.log('error : ', invalidPlates.errors);
+
+    return { validPlates: validPlates, invalidPlates: invalidPlates.plates };
   }
 }
 

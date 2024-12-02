@@ -1,40 +1,57 @@
 import * as cheerio from 'cheerio';
 
-import database from '../../../plate-utils/database/database.js';
 import plateNode from '../../../plate-utils/plate-node/plate-node.js';
+import { ALL_PLATES_TYPE } from '../../../type.js';
 import { SELECTORS } from '../config.js';
-import { getPlatesResponse } from '../requests/plate.request';
-import { plateSchema, PlateSchematype } from '../schemas/plate.schema';
+import { getPlatesResponse } from '../requests/plate.request.js';
+import { plateSchema, PlateSchematype } from '../schemas/plate.schema.js';
 
 class Xplate extends plateNode {
-  public async parsePlates(pageNumber: number): Promise<cheerio.Root | object> {
-    const response = await getPlatesResponse(pageNumber);
+  async parsePlates(pageNumber: number): Promise<cheerio.Root | null> {
+    try {
+      const { platesResponse } = await getPlatesResponse(pageNumber);
+      const html = (await platesResponse.data) as string;
 
-    const html: string = (await response.platesResponse.data) as string;
+      if (!html) {
+        throw new Error(`No HTML returned for page: ${pageNumber.toString()}`);
+      }
 
-    return cheerio.load(html);
+      return cheerio.load(html);
+    } catch (error) {
+      console.error(`Failed to parse page ${pageNumber.toString()}:`, error);
+      return null;
+    }
   }
 
   public async extractPlates(
     startPage: number,
     endPage: number,
-  ): Promise<void> {
+  ): Promise<ALL_PLATES_TYPE> {
     const Plates: PlateSchematype[] = [];
 
-    for (
-      let pageNumber: number = startPage;
-      pageNumber <= endPage;
-      pageNumber++
-    ) {
-      const $ = (await this.parsePlates(pageNumber)) as cheerio.Root;
-      if ($(SELECTORS.WARNING_MESSAGE).length) {
-        // if there are no plates then skip
-        return;
-      }
+    const pageNumbers = Array.from(
+      { length: endPage - startPage + 1 },
+      (_, i) => startPage + i,
+    );
 
+    // Fetch all pages in parallel
+    const pageResults = await Promise.all(
+      pageNumbers.map((pageNumber) =>
+        this.parsePlates(pageNumber).catch((err: unknown) => {
+          console.error(`Error processing page ${pageNumber.toString()}:`, err);
+          return null;
+        }),
+      ),
+    );
+
+    // // Process each page result
+    for (const $ of pageResults) {
+      if (!$) continue; // Skip failed pages
+
+      // Select all plates on the page
       const plates = Array.from($(SELECTORS.ALL_PLATES));
-
-      if (plates.length === 0) return;
+      console.log('plates length : ', plates.length);
+      if (plates.length === 0) continue;
 
       for (const plate of plates) {
         const plateElement = $(plate);
@@ -52,28 +69,31 @@ class Xplate extends plateNode {
         const character = characterMatch ? characterMatch[1] : '';
         const number = numberMatch ? numberMatch[1] : '';
 
-        const newPlate: PlateSchematype = {
+        // Add the extracted plate to the list
+        Plates.push({
           image: imgSrc,
-          price: price,
-          duration: duration,
-          emirate: emirate,
+          price,
+          duration,
+          emirate,
           source: SELECTORS.SOURCE,
-          number: number,
-          character: character,
-          url: url,
-        };
-
-        Plates.push(newPlate);
+          number,
+          character,
+          url,
+        });
       }
     }
 
+    // Validate plates
     const { validPlates, invalidPlates } = super.validatePlates(
       Plates,
       plateSchema,
     );
 
-    this.plates = validPlates;
-    await database.addPlates(validPlates, invalidPlates.plates);
+    // // Save valid plates to the database
+    // await database.addPlates(validPlates, invalidPlates.plates);
+
+    return { validPlates: validPlates, invalidPlates: invalidPlates.plates };
   }
 }
+
 export default new Xplate();

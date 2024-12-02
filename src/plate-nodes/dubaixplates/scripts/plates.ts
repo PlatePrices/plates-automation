@@ -1,13 +1,14 @@
 import * as cheerion from 'cheerio';
 
-import database from '../../../plate-utils/database/database.js';
+import logger from '../../../plate-utils/logger/logger.js';
 import plateNode from '../../../plate-utils/plate-node/plate-node.js';
+import { ALL_PLATES_TYPE } from '../../../type.js';
 import { SELECTORS } from '../config.js';
 import { getPlatesResponse } from '../requests/plates.requests.js';
 import { plateSchema, PlateSchematype } from '../schemas/plates.schema.js';
 
 class DubaiXplates extends plateNode {
-  public async parsePlates(pageNumber: number): Promise<cheerio.Root | object> {
+  public async parsePlates(pageNumber: number): Promise<cheerio.Root | null> {
     const { platesResponse } = await getPlatesResponse(pageNumber);
 
     const html = (await platesResponse.data) as string;
@@ -21,19 +22,32 @@ class DubaiXplates extends plateNode {
   public async extractPlates(
     startPage: number,
     endPage: number,
-  ): Promise<void> {
+  ): Promise<ALL_PLATES_TYPE> {
     const Plates: PlateSchematype[] = [];
 
-    for (
-      let pageNumber: number = startPage;
-      pageNumber <= endPage;
-      pageNumber++
-    ) {
-      const $ = (await this.parsePlates(pageNumber)) as cheerio.Root;
+    const pageNumbers = Array.from(
+      { length: endPage - startPage + 1 },
+      (_, i) => startPage + i,
+    );
+
+    const pageResults = await Promise.all(
+      pageNumbers.map((pageNumber) =>
+        this.parsePlates(pageNumber).catch((err: unknown) => {
+          logger.error(
+            `Error processing page ${pageNumber.toString()} : `,
+            err,
+          );
+          return null;
+        }),
+      ),
+    );
+
+    for (const $ of pageResults) {
+      if (!$) continue;
+
       const plates = Array.from($(SELECTORS.ALL_PLATES));
 
-      if (plates.length === 0) return;
-
+      if (plates.length === 0) continue;
       for (const plate of plates) {
         const plateElement = $(plate);
         const number = plateElement.find(SELECTORS.PLATE_NUMBER).text();
@@ -65,12 +79,23 @@ class DubaiXplates extends plateNode {
         Plates.push(newPlate);
       }
     }
+
+    for (
+      let pageNumber: number = startPage;
+      pageNumber <= endPage;
+      pageNumber++
+    ) {
+      const $ = (await this.parsePlates(pageNumber)) as cheerio.Root;
+      const plates = Array.from($(SELECTORS.ALL_PLATES));
+
+      if (plates.length === 0) continue;
+    }
     const { validPlates, invalidPlates } = super.validatePlates(
       Plates,
       plateSchema,
     );
-    this.plates = validPlates;
-    await database.addPlates(validPlates, invalidPlates.plates);
+
+    return { validPlates: validPlates, invalidPlates: invalidPlates.plates };
   }
 }
 
