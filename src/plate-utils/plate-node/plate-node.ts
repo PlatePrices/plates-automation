@@ -32,7 +32,7 @@ export default abstract class plateNode {
     pageNumber: number,
   ): Promise<cheerio.Root | object | null>;
 
-  protected abstract extractPlates(
+  public abstract extractPlates(
     startPage: number,
     endPage: number,
   ): Promise<ALL_PLATES_TYPE>;
