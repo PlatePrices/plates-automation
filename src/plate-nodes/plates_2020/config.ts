@@ -1,9 +1,7 @@
-import axios from 'axios';
-
-export const createPlates2020Config = (pageNumber) => {
+export const getRequestConfig = (pageNumber: number) => {
   return {
     method: 'GET',
-    url: `https://2020.ae/api/plates?limit=24&page=${pageNumber}&type_id=1&exclude_inactive=1`,
+    url: `https://2020.ae/api/plates?limit=24&page=${pageNumber.toString()}&type_id=1&exclude_inactive=1`,
     headers: {
       Accept: 'application/json, text/plain, */*',
       'Accept-Language': 'en-US,en;q=0.8',
@@ -24,7 +22,7 @@ export const createPlates2020Config = (pageNumber) => {
   };
 };
 
-
-const config = createPlates2020Config(1);
-    const response = await axios(config);
-    console.log(response.data)
+export const SELECTORS = {
+  SOURCE_NAME: '2020',
+  SHARABLE_LINK: 'https://www.2020.ae/en/buy/plates/',
+};
