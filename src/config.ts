@@ -9,7 +9,7 @@ export const SOCKET_SERVER_URL = env
   .required()
   .asString();
 
-const DB_CONNECTION_URL = env.get('DB_CONNECTION_URL').required().asString();
+const DB_CONNECTION_URL = env.get('DB_URL_CONNECTION').required().asString();
 
 export const sequalize = new Sequelize(DB_CONNECTION_URL, {
   dialect: 'mysql',

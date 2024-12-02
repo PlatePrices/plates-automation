@@ -5,6 +5,19 @@ import platesAe from './plate-nodes/numberae/scripts/plates.js';
 import plates2020 from './plate-nodes/plates_2020/scripts/plates.js';
 import xplate from './plate-nodes/xplate/scripts/plates.js';
 import logger from './plate-utils/logger/logger.js';
+import socket from './socket.js';
+
+/*
+create a hashmap that maps each source to its extract function to differentiate between tasks 
+*/
+socket.on('connect', () => {
+  logger.info('client connected');
+});
+
+socket.on(
+  'scrape-tasks',
+  (tasks: { source: string; startPage: number; endPage: number }[]) => {},
+);
 
 void (async () => {
   try {
