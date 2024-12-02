@@ -1,6 +1,7 @@
 import dubaiXplate from './plate-nodes/dubaixplates/scripts/plates.js';
 import dubizzle from './plate-nodes/dubizzle/scripts/plates.js';
 import numberae from './plate-nodes/numberae/scripts/plates.js';
+import platesAe from './plate-nodes/numberae/scripts/plates.js';
 import xplate from './plate-nodes/xplate/scripts/plates.js';
 import logger from './plate-utils/logger/logger.js';
 
@@ -11,6 +12,7 @@ void (async () => {
       dubizzle.extractPlates(1, 10),
       dubaiXplate.extractPlates(1, 10),
       numberae.extractPlates(1, 10),
+      platesAe.extractPlates(1, 10),
     ]);
 
     let validCounter: number = 0;

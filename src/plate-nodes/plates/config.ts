@@ -1,4 +1,4 @@
-const createPlatesAeConfig = (pageNumber) => {
+export const createPlatesAeConfig = (pageNumber: number) => {
   return {
     method: 'POST',
     url: 'https://www.plates.ae/plates-en/loadmore_one_plate.php',
@@ -23,11 +23,14 @@ const createPlatesAeConfig = (pageNumber) => {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
       'x-requested-with': 'XMLHttpRequest',
     },
-    data: `page=${pageNumber}`,
+    data: `page=${pageNumber.toString()}`,
   };
 };
 
-import axios from "axios";
-const config = createPlatesAeConfig(1);
-    const response = await axios(config);
-    console.log(response.data)
+export const SELECTORS = {
+  ALL_PLATES: 'li > div.col-xl-12',
+  PRICE: 'span.pricered',
+  PLATE_NUMBER: '.plate_nub',
+  CHARACTER: '.plate_code',
+  SOURCE: 'PLATES_AE',
+};
