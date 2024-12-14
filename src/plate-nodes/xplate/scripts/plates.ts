@@ -34,63 +34,64 @@ class Xplate extends plateNode {
       (_, i) => startPage + i,
     );
 
-    // Fetch all pages in parallel
-    const pageResults = await Promise.all(
-      pageNumbers.map((pageNumber) =>
-        this.parsePlates(pageNumber).catch((err: unknown) => {
-          console.error(`Error processing page ${pageNumber.toString()}:`, err);
-          return null;
-        }),
-      ),
-    );
+    const batchSize = 10;
 
-    // // Process each page result
-    for (const $ of pageResults) {
-      if (!$) continue; // Skip failed pages
+    for (let i = 0; i < pageNumbers.length; i += batchSize) {
+      const batch = pageNumbers.slice(i, i + batchSize);
+      console.log('Processing batch: ', batch);
+      const pageResults = await Promise.all(
+        batch.map((pageNumber) =>
+          this.parsePlates(pageNumber).catch((err: unknown) => {
+            console.error(
+              `Error processing page ${pageNumber.toString()}:`,
+              err,
+            );
+            return null;
+          }),
+        ),
+      );
 
-      // Select all plates on the page
-      const plates = Array.from($(SELECTORS.ALL_PLATES));
-      console.log('plates length : ', plates.length);
-      if (plates.length === 0) continue;
+      for (const $ of pageResults) {
+        if (!$) continue;
 
-      for (const plate of plates) {
-        const plateElement = $(plate);
-        const imgSrc = plateElement.find('img').attr('data-src') || '';
-        const price = plateElement.find(SELECTORS.PRICE).text().trim() || '';
-        const duration =
-          plateElement.find(SELECTORS.DURATION).text().trim() || '';
-        const url = plateElement.find(SELECTORS.LINK).attr('href') || '';
+        const plates = Array.from($(SELECTORS.ALL_PLATES));
+        console.log('plates length : ', plates.length);
+        if (plates.length === 0) continue;
 
-        const emirateMatch = url.match(/\/(\d+)-(.+?)-code-/);
-        const characterMatch = url.match(/-code-(.+?)-plate-number-/);
-        const numberMatch = url.match(/plate-number-(\d+)/);
+        for (const plate of plates) {
+          const plateElement = $(plate);
+          const imgSrc = plateElement.find('img').attr('data-src') || '';
+          const price = plateElement.find(SELECTORS.PRICE).text().trim() || '';
+          const duration =
+            plateElement.find(SELECTORS.DURATION).text().trim() || '';
+          const url = plateElement.find(SELECTORS.LINK).attr('href') || '';
 
-        const emirate = emirateMatch ? emirateMatch[2] : '';
-        const character = characterMatch ? characterMatch[1] : '';
-        const number = numberMatch ? numberMatch[1] : '';
+          const emirateMatch = url.match(/\/(\d+)-(.+?)-code-/);
+          const characterMatch = url.match(/-code-(.+?)-plate-number-/);
+          const numberMatch = url.match(/plate-number-(\d+)/);
 
-        // Add the extracted plate to the list
-        Plates.push({
-          image: imgSrc,
-          price,
-          duration,
-          emirate,
-          source: SELECTORS.SOURCE,
-          number,
-          character,
-          url,
-        });
+          const emirate = emirateMatch ? emirateMatch[2] : '';
+          const character = characterMatch ? characterMatch[1] : '';
+          const number = numberMatch ? numberMatch[1] : '';
+
+          Plates.push({
+            image: imgSrc,
+            price,
+            duration,
+            emirate,
+            source: SELECTORS.SOURCE,
+            number,
+            character,
+            url,
+          });
+        }
       }
     }
 
-    // Validate plates
     const { validPlates, invalidPlates } = super.validatePlates(
       Plates,
       plateSchema,
     );
-
-    // // Save valid plates to the database
-    // await database.addPlates(validPlates, invalidPlates.plates);
 
     return { validPlates: validPlates, invalidPlates: invalidPlates.plates };
   }

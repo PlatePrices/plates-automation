@@ -34,7 +34,7 @@
     "typescript-eslint": "^7.4.0"
   },
   "scripts": {
-    "dev": "node --loader ts-node/esm src/main.ts",        
+    "dev": "node --loader ts-node/esm src/main.ts",
     "start": "node ./dist/main.js",
     "start:prod": "node dist/main.js",
     "start:dev": "tsx src/main.ts",

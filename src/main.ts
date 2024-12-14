@@ -1,3 +1,6 @@
+import { io } from 'socket.io-client';
+
+import { SOCKET_SERVER_URL } from './config.js';
 import dubaiXplate from './plate-nodes/dubaixplates/scripts/plates.js';
 import dubizzle from './plate-nodes/dubizzle/scripts/plates.js';
 import numberae from './plate-nodes/numberae/scripts/plates.js';
@@ -5,44 +8,36 @@ import platesAe from './plate-nodes/numberae/scripts/plates.js';
 import plates2020 from './plate-nodes/plates_2020/scripts/plates.js';
 import xplate from './plate-nodes/xplate/scripts/plates.js';
 import logger from './plate-utils/logger/logger.js';
-import socket from './socket.js';
+import plateNode from './plate-utils/plate-node/plate-node.js';
 
-/*
-create a hashmap that maps each source to its extract function to differentiate between tasks 
-*/
+const SOURCES_MAP = new Map<string, plateNode>([
+  ['XPLATE', xplate],
+  ['2020', plates2020],
+  ['PLATES_AE', platesAe],
+  ['NUMBER_AE', numberae],
+  ['DUBIZZLE', dubizzle],
+  ['DUBAI-XPLATE', dubaiXplate],
+]);
+
+const socket = io(SOCKET_SERVER_URL);
+
 socket.on('connect', () => {
-  logger.info('client connected');
+  logger.info('Client connected');
 });
 
 socket.on(
-  'scrape-tasks',
-  (tasks: { source: string; startPage: number; endPage: number }[]) => {},
+  'get-plates',
+  async (task: { source: string; startPage: number; endPage: number }) => {
+    const all = await SOURCES_MAP.get(task.source)?.extractPlates(
+      task.startPage,
+      task.endPage,
+    );
+
+    socket.emit('task-completed', {
+      source: task.source,
+      startPage: task.startPage,
+      endPage: task.endPage,
+      plates: all?.validPlates,
+    });
+  },
 );
-
-void (async () => {
-  try {
-    const allPlates = await Promise.all([
-      xplate.extractPlates(1, 10),
-      dubizzle.extractPlates(1, 10),
-      dubaiXplate.extractPlates(1, 10),
-      numberae.extractPlates(1, 10),
-      platesAe.extractPlates(1, 10),
-      plates2020.extractPlates(1, 10),
-    ]);
-
-    let validCounter: number = 0;
-    let invalidCounter: number = 0;
-
-    for (const groupPlate of allPlates) {
-      validCounter += groupPlate.validPlates.length;
-      invalidCounter += groupPlate.invalidPlates.length;
-    }
-
-    logger.debub('this is the counter of valid plates : ', validCounter);
-    logger.debub('this is the counter of invalid plates : ', invalidCounter);
-  } catch (error) {
-    logger.error('Error in xplate.extractPlates:', error);
-
-    console.log('this is the error : ', error);
-  }
-})();
