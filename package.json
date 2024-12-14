@@ -34,13 +34,14 @@
     "typescript-eslint": "^7.4.0"
   },
   "scripts": {
-    "dev": "node --loader ts-node/esm src/main.ts",        
+    "dev": "node --loader ts-node/esm src/main.ts",
     "start": "node ./dist/main.js",
     "start:prod": "node dist/main.js",
     "start:dev": "tsx src/main.ts",
     "build": "tsc",
     "test": "echo \"Error: oops, the actor has no tests yet, sad!\" && exit 1",
     "lint": "eslint '**/*.ts'",
+    "lint:fix": "eslint '**/*.ts' --fix",
     "format": "prettier --write \"src/**/*.ts\""
   },
   "author": "It's not you it's me",
